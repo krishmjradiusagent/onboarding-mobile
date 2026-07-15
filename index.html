@@ -1977,15 +1977,15 @@ safeLucide();
 /* ── usage banner switcher — screen 7 (chat) only, no CTA (mobile can't add funds in-app) ── */
 const USAGE_STATES=[
   {cls:'warn',icon:'<path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>',
-   title:"You're approaching your usage limit",sub:'Resets in 2h 14m.'},
+   title:"You're approaching your usage limit",sub:'$4.20 in usage credits remaining.'},
   {cls:'error',icon:'<circle cx="12" cy="12" r="10"/><path d="M15 9l-6 6M9 9l6 6"/>',
-   title:'Usage limit reached',sub:'Your usage credit balance is $0.00. Resets in 2h 14m.'},
+   title:'Usage limit reached',sub:'Your usage credit balance is $0.00.'},
   {cls:'on',icon:'<path d="M20 6 9 17l-5-5"/>',
    title:'Extra usage turned on',sub:"You'll continue working, billed at standard rates after your plan limit."},
   {cls:'active',icon:'<path d="M13 2 3 14h9l-1 8 10-12h-9l1-8Z"/>',
-   title:'Using extra usage',sub:'$4.82 spent this session · Plan limit resets in 2h 14m'},
+   title:'Using extra usage',sub:'$15.18 in credits remaining'},
   {cls:'meter',icon:'<path d="M12 20V10M18 20V4M6 20v-4"/>',
-   title:'62% of session used',sub:'Resets 4:12 PM',bar:62}
+   title:'62% of session used',sub:'$20.00 in usage credits available',bar:62}
 ];
 function setUsageState(key){
   const b=$('usageBanner');
