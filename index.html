@@ -68,6 +68,8 @@ body.dark .npill:hover{background:rgba(255,255,255,.06);color:#eee}
 /* atoms */
 h1{font:700 var(--text-2xl,24px)/1.15 var(--font-sans);margin:0;text-wrap:balance}
 .sub{font-size:var(--text-sm,14px);color:var(--muted-foreground);margin:6px 0 0;text-wrap:pretty}
+.otpEditRow{display:flex;align-items:center;gap:6px;margin-top:8px}
+.otpEditLbl{font-size:var(--text-sm,14px);color:var(--muted-foreground)}
 .lbl{font:500 var(--text-sm,14px) var(--font-sans);color:var(--foreground);margin:14px 0 6px}
 .inp{height:44px;width:100%;border-radius:var(--radius-lg);border:1px solid var(--input);background:var(--background);color:var(--foreground);padding:0 12px;font:400 16px var(--font-sans)}
 .inp:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(90,95,242,.12)}
@@ -669,7 +671,8 @@ i[data-lucide]{width:16px;height:16px}
     <div class="screen" id="s-otp">
       <div class="mellogo" style="margin:0 0 16px"><img src="assets/mel-intro/orb-fill.svg" alt=""><img src="assets/mel-intro/orb-inf.svg" alt=""></div>
       <h1>Verification code</h1>
-      <p class="sub">We've sent a 6-digit code to <strong id="otpPhone">(555) 012-3456</strong> via message &amp; email to activate your account.</p>
+      <p class="sub">We've sent a 6-digit code to <strong id="otpEmail">sofia@example.com</strong> via email to activate your account.</p>
+      <div class="otpEditRow"><span class="otpEditLbl">Wrong email?</span><button class="linkbtn" style="padding:0" onclick="go('details')">Edit email</button></div>
       <div class="lbl">Verification code</div>
       <div class="otprow" id="otpRow" onclick="otpFocus()">
         <div class="toast" id="otpToast">Code sent</div>
@@ -1180,10 +1183,10 @@ const CODE='428913';
 let resendT=null,resendLeft=30,autoVerifyT=null,verifying=false;
 let notifT=null;
 function sendOtpNotif(){
-  $('otpPhone').textContent=$('fPhone').value||'(555) 012-3456';
+  $('otpEmail').textContent=$('fEmail').value||'sofia@example.com';
   otpType('');startResendTimer();
   $('notif').classList.remove('on');clearTimeout(notifT);
-  notifT=setTimeout(()=>showNotif('Messages','Your Radius code is 428913.',true),600);
+  notifT=setTimeout(()=>showNotif('Mail','Your Radius code is 428913.',{sticky:true,type:'email'}),600);
   setTimeout(()=>$('otpInput').focus(),300);
 }
 function showNotif(from,body,opts){
@@ -1237,7 +1240,7 @@ function startResendTimer(){
 function resendOtp(){
   otpType('');startResendTimer();
   const t=$('otpToast');t.classList.add('on');setTimeout(()=>t.classList.remove('on'),1600);
-  setTimeout(()=>showNotif('Messages','Your Radius code is 428913.',true),500);
+  setTimeout(()=>showNotif('Mail','Your Radius code is 428913.',{sticky:true,type:'email'}),500);
   otpFocus();
 }
 
