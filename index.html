@@ -214,10 +214,10 @@ body.dark .numicon.tPurple{background:color-mix(in srgb,#A855F7 22%,transparent)
 body.dark .glasscard{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 8px 30px rgba(0,0,0,.35)}
 .ggwrap{display:flex;justify-content:center;padding:4px 0 20px}
 .ggwrap svg{width:44px;height:44px}
-.gbtn{width:100%;height:48px;border-radius:var(--radius-full);border:1px solid #131314;background:#131314;color:#fff;font:500 var(--text-sm) var(--font-sans);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;transition:opacity .15s}
+.gbtn{width:100%;height:48px;border-radius:var(--radius-full);border:none;background:#fff;color:#18181B;font:500 var(--text-sm) var(--font-sans);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;transition:opacity .15s}
 .gbtn:hover:not(:disabled){opacity:.92}
 .gbtn:disabled{opacity:.7;cursor:default}
-body.dark .gbtn{background:#1F1F22;border-color:rgba(255,255,255,.12)}
+body.dark .gbtn{background:#fff;border:none;color:#18181B}
 .gbtn .gg{width:18px;height:18px;flex-shrink:0}
 .trustrow{display:flex;flex-wrap:wrap;gap:8px 14px;justify-content:center;margin-top:16px;padding-top:14px;border-top:1px solid rgba(0,0,0,.06)}
 body.dark .trustrow{border-top-color:rgba(255,255,255,.08)}
@@ -228,7 +228,7 @@ body.dark .trustrow{border-top-color:rgba(255,255,255,.08)}
 .connectedrow{display:none;margin-top:14px;padding:12px 14px;border-radius:var(--radius-xl);background:color-mix(in srgb,var(--primary) 8%,transparent);border:1px solid color-mix(in srgb,var(--primary) 32%,transparent);align-items:center;gap:10px}
 .connectedrow.on{display:flex;animation:in .3s ease-out}
 .cchk{width:22px;height:22px;border-radius:50%;background:var(--primary);color:var(--primary-foreground);display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.cemail{flex:1;font:500 var(--text-sm) var(--font-mono);color:var(--foreground);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cemail{flex:1;font:500 var(--text-sm) var(--font-sans);color:var(--foreground);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .linkbtn{background:none;border:none;color:var(--primary);font:500 var(--text-sm) var(--font-sans);cursor:pointer;padding:4px 8px}
 
 /* voice — add clients (screen 4) */
@@ -811,7 +811,7 @@ i[data-lucide]{width:16px;height:16px}
             <svg class="on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg>
             <svg class="off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><line x1="2" y1="2" x2="22" y2="22"/><path d="M18.89 13.23A7 7 0 0 0 19 12v-2"/><path d="M5 10v2a7 7 0 0 0 12 5"/><path d="M15 9.34V5a3 3 0 0 0-5.68-1.33"/><path d="M9 9v3a3 3 0 0 0 5.12 2.12"/><line x1="12" y1="19" x2="12" y2="22"/></svg>
           </button>
-          <button class="vProspectPill" id="vProspectPill" onclick="runProspect()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13"/><path d="m22 2-7 20-4-9-9-4 20-7z"/></svg><span id="vProspectPillTxt">Start prospecting</span></button>
+          <button class="vProspectPill" id="vProspectPill" onclick="runProspect()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13"/><path d="m22 2-7 20-4-9-9-4 20-7z"/></svg><span id="vProspectPillTxt">Start Prospecting</span></button>
           <button class="vBtn" onclick="alert('Switches to chat, same thread — chat parity comes after this pass.')" aria-label="Switch to chat">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
           </button>
@@ -883,7 +883,7 @@ i[data-lucide]{width:16px;height:16px}
         </div>
 
         <div class="vState" id="mvCap">Tap to hear Mel</div>
-        <div class="vStateSub" id="mvSub" style="text-align:center">she'll tell you what she can help with</div>
+        <div class="vStateSub" id="mvSub" style="text-align:center">She'll tell you what she can help with</div>
 
         <div class="mvCaps" id="mvCaps"></div>
 
@@ -1394,7 +1394,7 @@ function startVoice(){
   vResetSlot(2);vResetSlot(3);vRefreshCount();
   /* reset CTA state */
   const pill=$('vProspectPill');pill.disabled=false;pill.onclick=runProspect;
-  $('vProspectPillTxt').textContent='Start prospecting';
+  $('vProspectPillTxt').textContent='Start Prospecting';
   pill.classList.remove('on');
   $('vActions').innerHTML='';
 
@@ -1411,7 +1411,7 @@ function startVoice(){
     pill.classList.add('on');
     return melVoicePlay('youre-added');
   }).then(()=>wait(200)).then(()=>{
-    say('Say a name…','or tap Start prospecting');melVoice('say-a-name');
+    say('Say a name…','or tap Start Prospecting');melVoice('say-a-name');
     vSetState('listening');vStep=1;
     bindStateClick();
   });
@@ -1480,7 +1480,7 @@ async function runCascade(n,data){
 }
 
 function offerProspect(){
-  vSetState('speaking');say('<span class="spMel">Mel</span>: Ready to prospect?','Tap Start prospecting');melVoice('ready-prospect');
+  vSetState('speaking');say('<span class="spMel">Mel</span>: Ready to prospect?','Tap Start Prospecting');melVoice('ready-prospect');
   /* pill already visible from startVoice — just ensure enabled */
   const pill=$('vProspectPill');pill.disabled=false;pill.classList.add('on');
 }
@@ -1707,7 +1707,7 @@ function mvStart(){
   mvSet('processing');mvSay('One moment…','Mel is joining');
   setTimeout(()=>{
     if(mvMuted||!mvStarted)return;
-    mvSet('speaking');mvSay('Mel is speaking','tap CC to toggle captions');
+    mvSet('speaking');mvSay('Mel is speaking','Tap CC to toggle captions');
     mvSynth=false;mvAudio.currentTime=0;
     mvAudio.play().catch(()=>{mvSynth=true;mvSpeakLines(0);});
   },900);
@@ -1716,7 +1716,7 @@ function mvDone(){mvFinished=true;mvSet('listening');mvSay('Ask me anything','li
 function mvStop(){
   if(mvAudio){mvAudio.pause();mvAudio.currentTime=0;}
   if(mvSynth)speechSynthesis.cancel();
-  mvStarted=false;mvFinished=false;mvSet('idle');mvSay('Tap to hear Mel',"she'll tell you what she can help with");
+  mvStarted=false;mvFinished=false;mvSet('idle');mvSay('Tap to hear Mel',"She'll tell you what she can help with");
   if(mvLines.length)mvShowLine(-1);
 }
 function mvToggleCC(){mvCC=!mvCC;$('mvRoot').dataset.cc=mvCC?'on':'off';$('mvCcBtn').classList.toggle('on',mvCC);}
@@ -1726,7 +1726,7 @@ function mvToggleMute(){
   else{
     if(!mvStarted)return;
     if(mvFinished){mvSet('listening');mvSay('Ask me anything','listening…');}
-    else{mvSynth?speechSynthesis.resume():mvAudio.play();mvSet('speaking');mvSay('Mel is speaking','tap CC to toggle captions');}
+    else{mvSynth?speechSynthesis.resume():mvAudio.play();mvSet('speaking');mvSay('Mel is speaking','Tap CC to toggle captions');}
   }
 }
 function skipClients(){go('intro');}
