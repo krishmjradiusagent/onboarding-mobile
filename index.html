@@ -1,0 +1,1663 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Radius — Mobile onboarding (flow v3)</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap">
+<script src="https://unpkg.com/lucide@latest"></script>
+<style>
+/* ── Radius UI 3.0 tokens (DESIGN.md §15) ── */
+:root{
+  --background:#FFFFFF; --foreground:#0A0A0A;
+  --card:#FFFFFF; --card-foreground:#0A0A0A;
+  --primary:#5A5FF2; --primary-foreground:#FAFAFA;
+  --secondary:#F5F5F5; --secondary-foreground:#171717;
+  --muted:#F5F5F5; --muted-foreground:#737373;
+  --accent:#F5F5F5; --accent-foreground:#171717;
+  --destructive:#DC2626; --destructive-foreground:#FAFAFA;
+  --border:#E5E5E5; --input:#E5E5E5; --ring:#171717;
+  --color-green:#6DA544;
+  --radius-md:8px; --radius-lg:10px; --radius-xl:14px; --radius-2xl:18px; --radius-full:9999px;
+  --text-xs:12px; --text-sm:14px; --text-base:16px; --text-lg:18px; --text-xl:20px; --text-2xl:24px; --text-3xl:32px;
+  --shadow-sm:0 1px 2px -1px rgba(0,0,0,.1),0 1px 3px 0 rgba(0,0,0,.1);
+  --shadow-md:0 2px 4px -2px rgba(0,0,0,.1),0 4px 6px -1px rgba(0,0,0,.1);
+  --shadow-xl:0 8px 10px -6px rgba(0,0,0,.1),0 20px 25px -5px rgba(0,0,0,.1);
+  --font-sans:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  --font-mono:ui-monospace,'SF Mono',Menlo,Consolas,monospace;
+}
+.dark{
+  --background:#0A0A0A; --foreground:#FAFAFA;
+  --card:#171717; --card-foreground:#FAFAFA;
+  --secondary:#262626; --secondary-foreground:#FAFAFA;
+  --muted:#262626; --muted-foreground:#A3A3A3;
+  --accent:#262626; --accent-foreground:#FAFAFA;
+  --destructive:#A10020;
+  --border:rgba(255,255,255,.1); --input:rgba(255,255,255,.15); --ring:#FAFAFA;
+}
+*,*::before,*::after{box-sizing:border-box}
+html,body{margin:0}
+body{background:#EBEBEF;font-family:var(--font-sans);font-size:14px;line-height:1.4;-webkit-font-smoothing:antialiased}
+body.dark{background:#050505}
+
+/* stage */
+.stage{min-height:100vh;display:flex;flex-direction:column;align-items:center;gap:14px;padding:28px 16px 60px}
+.topbar{width:390px;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.topbar .t{font-size:13px;font-weight:600;color:#555}
+body.dark .topbar .t{color:#999}
+.themebtn{height:28px;padding:0 12px;border-radius:var(--radius-lg);border:1px solid #ccc;background:transparent;font:700 12px var(--font-sans);color:#555;cursor:pointer;flex-shrink:0}
+body.dark .themebtn{color:#999;border-color:#333}
+.navpills{display:flex;gap:4px;background:rgba(255,255,255,.6);border:1px solid #d8d8dc;border-radius:10px;padding:3px}
+body.dark .navpills{background:rgba(255,255,255,.05);border-color:#2a2a2e}
+.npill{width:26px;height:24px;border:none;background:transparent;color:#666;font:600 11px var(--font-sans);cursor:pointer;border-radius:7px;display:flex;align-items:center;justify-content:center;line-height:1}
+.npill:hover{background:rgba(0,0,0,.05);color:#111}
+body.dark .npill{color:#999}
+body.dark .npill:hover{background:rgba(255,255,255,.06);color:#eee}
+.npill.on{background:#5A5FF2;color:#fff}
+.npill.on:hover{background:#5A5FF2;color:#fff}
+.npill .plbl{font:500 9px var(--font-sans);opacity:.7;margin-left:3px;text-transform:uppercase;letter-spacing:.04em}
+
+/* phone */
+.phone{width:390px;height:844px;background:var(--background);color:var(--foreground);border-radius:34px;box-shadow:0 12px 40px rgba(0,0,0,.22);overflow:hidden;position:relative;display:flex;flex-direction:column;border:1px solid var(--border)}
+.statusbar{height:44px;flex-shrink:0;display:flex;align-items:center;justify-content:space-between;padding:0 24px;font:600 13px var(--font-mono);color:var(--foreground)}
+.screen{flex:1;display:none;flex-direction:column;padding:8px 20px 38px;overflow-y:auto;animation:in .22s ease-out}
+.screen.on{display:flex}
+@keyframes in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+
+/* atoms */
+h1{font:700 var(--text-2xl,24px)/1.15 var(--font-sans);margin:0;text-wrap:balance}
+.sub{font-size:var(--text-sm,14px);color:var(--muted-foreground);margin:6px 0 0;text-wrap:pretty}
+.lbl{font:500 var(--text-sm,14px) var(--font-sans);color:var(--foreground);margin:14px 0 6px}
+.inp{height:44px;width:100%;border-radius:var(--radius-lg);border:1px solid var(--input);background:var(--background);color:var(--foreground);padding:0 12px;font:400 16px var(--font-sans)}
+.inp:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(90,95,242,.12)}
+.inp::placeholder{color:var(--muted-foreground)}
+.btn{height:48px;width:100%;border:none;border-radius:90px;background:var(--primary);color:var(--primary-foreground);font:500 var(--text-sm,14px) var(--font-sans);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:opacity .15s}
+.btn:disabled{opacity:.5}
+.btn.secondary{background:var(--secondary);color:var(--secondary-foreground)}
+.btn.outline{background:var(--background);color:var(--foreground);border:1px solid var(--border)}
+.btn.ghost{background:transparent;color:var(--foreground)}
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius-xl);box-shadow:var(--shadow-sm);padding:16px}
+body.dark .card{box-shadow:none}
+.footer{margin-top:auto;padding-top:16px}
+.footer.hide{display:none}
+.micSheet{padding:0 20px 32px;align-items:stretch}
+.micGate{display:flex;flex-direction:column;align-items:center;text-align:center;gap:4px;padding:4px 4px 0}
+.micGate.hide{display:none}
+.micGateIco{width:56px;height:56px;border-radius:50%;margin-bottom:10px;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.micGateIco img{width:100%;height:100%;display:block}
+.micGateIco--warn{background:color-mix(in srgb,var(--destructive) 14%,transparent);color:var(--destructive)}
+.micGateTitle{font:600 16px var(--font-sans);color:var(--foreground)}
+.micGateSub{font-size:13px;color:var(--muted-foreground);line-height:1.5;margin:6px 0 18px;max-width:30ch}
+.micGate .btn{margin-top:8px}
+.micGate .btn:first-of-type{margin-top:0}
+.rolegrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.role{border:1px solid var(--border);border-radius:12px;padding:10px 12px;cursor:pointer;background:var(--card);display:flex;align-items:center;gap:10px}
+.role.sel{border-color:var(--primary);outline:1px solid var(--primary);background:color-mix(in srgb,var(--primary) 6%,var(--card))}
+.role .ric{width:32px;height:32px;border-radius:var(--radius-full);background:var(--muted);display:flex;align-items:center;justify-content:center;flex:0 0 32px;color:var(--muted-foreground)}
+.role.sel .ric{background:color-mix(in srgb,var(--primary) 14%,var(--card));color:var(--primary)}
+.role .rt{font:600 13px var(--font-sans)}
+.role.sel .rt{color:var(--primary)}
+.role .rs{font-size:12px;color:var(--muted-foreground);margin-top:1px}
+.err{display:none;color:var(--destructive);font-size:12px;margin-top:8px}
+.err.on{display:block}
+
+/* required asterisk */
+.req{color:var(--destructive)}
+
+/* ── screen 1 · sizing only (tokens handle color) ── */
+#s-details{padding-top:14px}
+/* Mel logo · exact from Figma node 113:3491 */
+/* unified Mel orb — same asset as intro (screen 5), scaled per usage */
+.mellogo{position:relative;width:48px;height:48px;flex-shrink:0;filter:drop-shadow(0 6px 18px rgba(91,72,154,.38))}
+.mellogo img{position:absolute;inset:0;width:100%;height:100%;display:block;border-radius:var(--radius-full)}
+#s-details h1{font-size:var(--text-3xl);background:linear-gradient(90deg,#B6B8FF 16%,#5A5FF2 45%,#F08068 76%,#F0A468 100%);background-size:200% 100%;-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:#5A5FF2;animation:gradShift 6s ease-in-out infinite alternate}
+@keyframes gradShift{from{background-position:0% 50%}to{background-position:100% 50%}}
+#s-details .sub{font-size:var(--text-base);margin-top:8px}
+#s-details .lbl{margin:20px 0 8px}
+#s-details .inp,#s-details .fieldbtn{height:44px;border-radius:var(--radius-lg)}
+#s-details .role{padding:12px}
+
+/* state sheet */
+.fieldbtn{height:44px;width:100%;border-radius:var(--radius-lg);border:1px solid var(--input);background:var(--background);color:var(--muted-foreground);padding:0 12px;font:400 16px var(--font-sans);display:flex;align-items:center;justify-content:space-between;cursor:pointer;text-align:left}
+.fieldbtn.filled{color:var(--foreground)}
+.sheetwrap{position:absolute;inset:0;background:rgba(0,0,0,.5);display:none;align-items:flex-end;z-index:30}
+body.dark .sheetwrap{background:rgba(0,0,0,.7)}
+.sheetwrap.on{display:flex}
+.sheet{width:100%;max-height:72%;background:var(--card);border-radius:var(--radius-xl) var(--radius-xl) 0 0;box-shadow:var(--shadow-xl);padding:0 20px 28px;display:flex;flex-direction:column;gap:10px}
+.grabber{display:flex;justify-content:center;padding:16px 0;flex-shrink:0}
+.grabber::before{content:"";width:120px;height:4px;border-radius:var(--radius-full);background:var(--muted)}
+.slist{overflow-y:auto;display:flex;flex-direction:column}
+.srow{display:flex;justify-content:space-between;align-items:center;padding:13px 2px;border-bottom:1px solid var(--border);font-size:var(--text-sm,14px);cursor:pointer}
+.shead{padding:10px 2px 6px}
+.sdiv{height:1px;background:var(--border);margin:6px 0}
+/* DS Command search input (components/Command.jsx · node 204:1144) */
+.ssearch{height:32px;border-radius:10px;background:rgba(229,229,229,.3);border:1px solid var(--input);display:flex;align-items:center;gap:6px;padding:4px 10px}
+.ssearch svg{width:16px;height:16px;flex:0 0 16px;color:var(--muted-foreground)}
+.ssearch input{flex:1;border:none;background:transparent;outline:none;font:400 14px/20px var(--font-sans);color:var(--foreground);min-width:0}
+.ssearch input::placeholder{color:var(--muted-foreground)}
+.badge{font:500 var(--text-xs,12px) var(--font-sans);padding:2px 8px;border-radius:var(--radius-full)}
+.badge.green{background:#DCFCE7;color:#166534}
+.badge.blue{background:#DBEAFE;color:#1D4ED8}
+.badge.outline{border:1px solid var(--border);color:var(--muted-foreground)}
+.waitnote{display:none;background:var(--muted);border-radius:var(--radius-md);padding:10px 12px;font-size:13px;color:var(--foreground)}
+.waitnote.on{display:block}
+
+/* otp — screen 2 · parity with screen 1 hero pattern */
+#s-otp{padding-top:14px}
+#s-otp h1{font-size:var(--text-3xl);background:linear-gradient(90deg,#B6B8FF 16%,#5A5FF2 45%,#F08068 76%,#F0A468 100%);background-size:200% 100%;-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:#5A5FF2;animation:gradShift 6s ease-in-out infinite alternate}
+#s-otp .sub{font-size:var(--text-base);margin-top:8px}
+#s-otp .sub strong{color:var(--foreground);font-weight:600}
+#s-otp .lbl{margin:20px 0 8px}
+.backrow{display:flex;align-items:center;gap:4px;margin:0 0 8px -8px}
+.backbtn{width:36px;height:36px;border-radius:var(--radius-full);display:flex;align-items:center;justify-content:center;background:transparent;border:none;color:var(--foreground);cursor:pointer}
+.backbtn:hover{background:var(--muted)}
+.otprow{display:flex;gap:8px;justify-content:center;margin-top:6px;position:relative}
+.otpbox{width:48px;height:56px;border:1px solid var(--input);border-radius:var(--radius-lg);display:flex;align-items:center;justify-content:center;font:600 22px var(--font-mono);background:var(--card);color:var(--foreground);transition:border-color .12s,box-shadow .12s}
+.otpbox.active{border-color:var(--primary);box-shadow:0 0 0 3px rgba(90,95,242,.12)}
+.otpbox.err{border-color:var(--destructive);box-shadow:0 0 0 3px rgba(220,38,38,.12)}
+.otphidden{position:absolute;inset:0;opacity:0;font-size:24px;letter-spacing:32px}
+.resendrow{display:flex;justify-content:center;align-items:center;gap:6px;margin-top:14px;font-size:var(--text-sm);color:var(--muted-foreground);min-height:44px}
+.resendbtn{background:none;border:none;padding:10px 4px;font:500 var(--text-sm) var(--font-sans);color:var(--primary);cursor:pointer}
+.resendbtn:disabled{color:var(--muted-foreground);cursor:default}
+.resenddot{color:var(--muted-foreground)}
+.toast{position:absolute;top:-38px;left:50%;transform:translateX(-50%);background:var(--foreground);color:var(--background);font:500 12px var(--font-sans);padding:6px 12px;border-radius:var(--radius-full);opacity:0;pointer-events:none;transition:opacity .2s;white-space:nowrap}
+.toast.on{opacity:1}
+.otpspin{display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,.35);border-top-color:#fff;border-radius:50%;animation:sp .7s linear infinite;vertical-align:-2px}
+.notif{position:absolute;top:52px;left:12px;right:12px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius-xl);box-shadow:var(--shadow-xl);padding:11px 14px;display:none;z-index:100;cursor:pointer;animation:drop .25s ease-out}
+.notif.on{display:block}
+@keyframes drop{from{opacity:0;transform:translateY(-16px)}to{opacity:1;transform:none}}
+.notif .nfrom{font:600 11px var(--font-sans);color:var(--muted-foreground);display:flex;gap:6px;align-items:center;margin-bottom:3px}
+.notif .nbody{font-size:13px}
+@keyframes shake{0%,100%{transform:none}25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
+.shake{animation:shake .3s ease 2}
+
+/* gmail + number combined */
+.gmrow{display:flex;align-items:center;gap:10px}
+.gmicon{width:36px;height:36px;border-radius:var(--radius-md);background:var(--muted);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.check{color:var(--color-green)}
+.collapse{transition:max-height .3s ease,opacity .3s ease;overflow:hidden}
+.numsec{display:none}
+.numsec.on{display:block;animation:in .3s ease-out}
+.secTitleRow{display:flex;align-items:center;gap:10px;margin:22px 0 0}
+.secIco{width:28px;height:28px;border-radius:var(--radius-full);background:var(--muted);color:var(--muted-foreground);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.secIco svg{width:15px;height:15px;stroke-width:2}
+.secH{font:600 var(--text-base) var(--font-sans);color:var(--foreground);margin:0;letter-spacing:-.005em}
+.secSub{font:400 var(--text-sm) var(--font-sans);color:var(--muted-foreground);margin:8px 0 0}
+.secDiv{border:none;border-top:1px solid var(--border);margin:24px 0 0}
+.numcard{border:1px solid var(--border);border-radius:var(--radius-lg);padding:10px 12px;cursor:pointer;margin-top:8px;background:var(--card);display:flex;align-items:center;gap:12px}
+.numcard:hover{background:var(--muted)}
+.numcard.sel{border-color:var(--primary);outline:1px solid var(--primary);background:color-mix(in srgb,var(--primary) 6%,var(--card))}
+.numicon{width:32px;height:32px;border-radius:var(--radius-full);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.numicon svg{width:16px;height:16px;stroke-width:2}
+.numicon.tGreen{background:#DCFCE7;color:#166534}
+.numicon.tBlue{background:#DBEAFE;color:#1D4ED8}
+.numicon.tPurple{background:#F3E8FF;color:#7E22CE}
+body.dark .numicon.tGreen{background:color-mix(in srgb,#6DA544 22%,transparent);color:#86EFAC}
+body.dark .numicon.tBlue{background:color-mix(in srgb,#2563EB 22%,transparent);color:#93C5FD}
+body.dark .numicon.tPurple{background:color-mix(in srgb,#A855F7 22%,transparent);color:#D8B4FE}
+.numtxt{font:600 var(--text-sm) var(--font-mono);color:var(--foreground)}
+.numsub{font:500 var(--text-xs) var(--font-sans);color:var(--muted-foreground);margin-top:1px;letter-spacing:.02em}
+.numcard.sel .numsub{color:var(--primary)}
+.spin{display:inline-block;width:14px;height:14px;border:2px solid var(--border);border-top-color:var(--primary);border-radius:50%;animation:sp .7s linear infinite;vertical-align:-2px}
+@keyframes sp{to{transform:rotate(360deg)}}
+
+/* screen 3 · Gmail connect hero + glass card */
+#s-connect{padding-top:14px}
+#s-connect .backrow{margin-bottom:2px}
+.gmhero{display:flex;flex-direction:column;align-items:flex-start;gap:10px;margin-top:2px}
+#s-connect h1#connectH{font-size:var(--text-3xl);background:linear-gradient(90deg,#B6B8FF 16%,#5A5FF2 45%,#F08068 76%,#F0A468 100%);background-size:200% 100%;-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:#5A5FF2;animation:gradShift 6s ease-in-out infinite alternate;letter-spacing:-.01em;line-height:1.15}
+#s-connect .sub{font-size:var(--text-base);margin-top:2px}
+.glasscard{margin-top:22px;padding:18px 18px 16px;border-radius:var(--radius-2xl);background:rgba(255,255,255,.55);border:1px solid rgba(0,0,0,.06);backdrop-filter:blur(20px) saturate(140%);-webkit-backdrop-filter:blur(20px) saturate(140%);box-shadow:0 8px 30px rgba(20,20,40,.06)}
+body.dark .glasscard{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 8px 30px rgba(0,0,0,.35)}
+.ggwrap{display:flex;justify-content:center;padding:4px 0 20px}
+.ggwrap svg{width:44px;height:44px}
+.gbtn{width:100%;height:48px;border-radius:var(--radius-full);border:1px solid #131314;background:#131314;color:#fff;font:500 var(--text-sm) var(--font-sans);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;transition:opacity .15s}
+.gbtn:hover:not(:disabled){opacity:.92}
+.gbtn:disabled{opacity:.7;cursor:default}
+body.dark .gbtn{background:#1F1F22;border-color:rgba(255,255,255,.12)}
+.gbtn .gg{width:18px;height:18px;flex-shrink:0}
+.trustrow{display:flex;flex-wrap:wrap;gap:8px 14px;justify-content:center;margin-top:16px;padding-top:14px;border-top:1px solid rgba(0,0,0,.06)}
+body.dark .trustrow{border-top-color:rgba(255,255,255,.08)}
+.trust{display:flex;align-items:center;gap:5px;font:500 var(--text-xs) var(--font-sans);color:var(--muted-foreground);white-space:nowrap}
+.trust svg{width:13px;height:13px;stroke-width:2;flex-shrink:0}
+.gmerr{display:none;color:var(--destructive);font-size:12px;margin-top:10px;text-align:center}
+.gmerr.on{display:block}
+.connectedrow{display:none;margin-top:14px;padding:12px 14px;border-radius:var(--radius-xl);background:color-mix(in srgb,var(--primary) 8%,transparent);border:1px solid color-mix(in srgb,var(--primary) 32%,transparent);align-items:center;gap:10px}
+.connectedrow.on{display:flex;animation:in .3s ease-out}
+.cchk{width:22px;height:22px;border-radius:50%;background:var(--primary);color:var(--primary-foreground);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.cemail{flex:1;font:500 var(--text-sm) var(--font-mono);color:var(--foreground);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.linkbtn{background:none;border:none;color:var(--primary);font:500 var(--text-sm) var(--font-sans);cursor:pointer;padding:4px 8px}
+
+/* voice — add clients (screen 4) */
+.voicewrap{align-items:stretch;text-align:left;padding:0!important}
+.vRoot{display:flex;flex-direction:column;flex:1;min-height:0;position:relative;background:radial-gradient(ellipse 620px 380px at 50% 18%,rgba(180,150,220,.06),transparent 55%),radial-gradient(ellipse 520px 480px at 15% 105%,rgba(90,95,242,.08),transparent 55%),radial-gradient(ellipse 520px 480px at 100% 100%,rgba(240,128,104,.045),transparent 55%)}
+.vTop{padding:16px 24px 0;display:flex;justify-content:flex-end;align-items:center;position:relative;z-index:2}
+.vIcoBtn{width:38px;height:38px;border-radius:var(--radius-full);background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);color:var(--foreground);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;transition:all .18s ease;padding:0}
+body:not(.dark) .vIcoBtn{background:rgba(0,0,0,.04);border-color:rgba(0,0,0,.08);color:var(--foreground)}
+.vIcoBtn:hover{background:rgba(255,255,255,.09)}
+body:not(.dark) .vIcoBtn:hover{background:rgba(0,0,0,.07)}
+.vIcoBtn.on{background:rgba(182,184,255,.14);border-color:rgba(182,184,255,.4);color:#B6B8FF}
+.vIcoBtn svg{width:18px;height:18px;stroke-width:2}
+
+.orb{width:132px;height:132px;border-radius:var(--radius-full);margin:28px auto 0;position:relative;flex-shrink:0;padding:2px;background:linear-gradient(var(--background),var(--background)) padding-box,conic-gradient(from 220deg at 50% 50%,#B6B8FF 0deg,#5A5FF2 90deg,#7A5AB8 180deg,#F08068 270deg,#F0A468 340deg,#B6B8FF 360deg) border-box;border:2px solid transparent;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 0 40px 4px rgba(90,95,242,.10),0 0 80px 16px rgba(240,164,104,.06)}
+.orb::before{content:"";position:absolute;inset:2px;border-radius:var(--radius-full);background:radial-gradient(circle at 50% 45%,#14141F 0%,#08080C 80%);z-index:0}
+body:not(.dark) .orb::before{background:radial-gradient(circle at 50% 45%,#f8f8fb 0%,#eeeef2 80%)}
+.orb .melS4{position:relative;z-index:1;width:124px;height:124px;transform-origin:center;transition:transform .25s ease,opacity .25s ease;border-radius:var(--radius-full);display:block}
+.orb.small{width:56px;height:56px;margin:10px auto 0}
+.orb.small .melS4{width:52px;height:52px}
+.orb[data-vstate="listening"] .melS4{animation:melBreatheS4 2.4s ease-in-out infinite}
+.orb[data-vstate="speaking"] .melS4{animation:melSpeakS4 1.6s ease-in-out infinite}
+.orb[data-vstate="idle"] .melS4{opacity:.55}
+.orb[data-vstate="processing"]::after{content:"";position:absolute;inset:-6px;border-radius:var(--radius-full);border:2px solid transparent;border-top-color:#B6B8FF;border-right-color:#F0A468;animation:sp 1.1s linear infinite;z-index:2}
+.orb[data-vstate="error"]{background:linear-gradient(var(--background),var(--background)) padding-box,linear-gradient(135deg,#F26B6B,#F08068) border-box;animation:shake .4s ease-in-out}
+.orb[data-vstate="confirm"]{background:linear-gradient(var(--background),var(--background)) padding-box,linear-gradient(135deg,#7DDCA6,#B6B8FF) border-box;box-shadow:0 0 40px 8px rgba(125,220,166,.20)}
+@keyframes melBreatheS4{0%,100%{transform:scale(1)}50%{transform:scale(1.025)}}
+@keyframes melSpeakS4{0%,100%{transform:scale(1)}50%{transform:scale(1.045)}}
+@keyframes cardInS4{0%{opacity:0;transform:translateY(8px) scale(.98)}100%{opacity:1;transform:translateY(0) scale(1)}}
+@keyframes waitPulseS4{0%,100%{box-shadow:0 0 0 0 rgba(182,184,255,0)}50%{box-shadow:0 0 0 2px rgba(182,184,255,.14)}}
+@media (prefers-reduced-motion:reduce){.orb .melS4{animation:none!important}.orb[data-vstate="processing"]::after{animation:none}}
+
+.vState{text-align:center;font:500 16px/1.35 var(--font-sans);letter-spacing:-.01em;color:var(--foreground);margin:22px 20px 0;padding:0}
+.vStateSub{font:400 12px var(--font-sans);color:var(--muted-foreground);margin-top:4px;letter-spacing:0}
+.vCaps{margin:12px 20px 0;padding:10px 14px;border-radius:14px;background:rgba(255,255,255,.04);border:1px solid var(--border);position:relative;z-index:2;display:none}
+body:not(.dark) .vCaps{background:rgba(0,0,0,.03)}
+.vRoot[data-cc="on"] .vCaps{display:block}
+.vCapLine{font-size:12px;line-height:1.45;color:var(--foreground)}
+.vCapLine+.vCapLine{margin-top:4px;opacity:.55}
+.vCapWho{font-size:10px;font-weight:700;letter-spacing:.08em;color:#E2AC7E;margin-right:6px;text-transform:uppercase}
+
+/* client stack — CUSTOM COLOR OK ONLY ON CARDS */
+.vStack{padding:14px 20px 0;display:flex;flex-direction:column;gap:8px;position:relative;z-index:2;flex:1 1 auto;overflow-y:auto}
+.vStackHead{display:flex;justify-content:space-between;padding:0 4px 6px}
+.vStackHead .l{font:600 11px var(--font-sans);letter-spacing:.01em;color:var(--muted-foreground)}
+.vStackHead .c{font:600 10px var(--font-sans);color:var(--muted-foreground);font-variant-numeric:tabular-nums;opacity:.75}
+.vCard{display:grid;grid-template-columns:auto 1fr auto auto;grid-template-rows:auto 0fr;column-gap:12px;row-gap:0;padding:10px 12px;border-radius:12px;min-height:56px;position:relative;transition:grid-template-rows .55s cubic-bezier(.2,.7,.3,1),padding .3s ease,background .25s ease,border-color .25s ease,box-shadow .25s ease}
+.vCard>.vAv{grid-column:1;grid-row:1;align-self:center}
+.vCard>.vBody{grid-column:2;grid-row:1;align-self:center;min-width:0}
+.vCard>.vChk{grid-column:3;grid-row:1;align-self:center}
+.vCard>.vChev{grid-column:4;grid-row:1;align-self:center}
+.vCard>.vExpand{grid-column:1/-1;grid-row:2;overflow:hidden;min-height:0}
+.vCard.filled{background:linear-gradient(180deg,rgba(90,95,242,.08) 0%,rgba(240,128,104,.03) 100%);border:1px solid rgba(182,184,255,.30);box-shadow:0 0 0 1px rgba(90,95,242,.06),0 8px 20px -8px rgba(90,95,242,.20);animation:cardInS4 .45s cubic-bezier(.2,.7,.3,1) both}
+body:not(.dark) .vCard.filled{background:linear-gradient(180deg,rgba(90,95,242,.05) 0%,rgba(240,128,104,.03) 100%);border-color:rgba(90,95,242,.28);box-shadow:0 0 0 1px rgba(90,95,242,.08),0 8px 20px -8px rgba(90,95,242,.14)}
+.vCard.waiting{background:rgba(90,95,242,.05);border:1px dashed rgba(182,184,255,.5);cursor:pointer;animation:waitPulseS4 1.8s ease-in-out infinite}
+body:not(.dark) .vCard.waiting{background:rgba(90,95,242,.05);border-color:rgba(90,95,242,.4)}
+.vCard.empty{background:rgba(255,255,255,.02);border:1px dashed var(--border);opacity:.55}
+body:not(.dark) .vCard.empty{background:rgba(0,0,0,.02)}
+.vAv{width:36px;height:36px;border-radius:var(--radius-full);flex-shrink:0;display:flex;align-items:center;justify-content:center;font:700 13px var(--font-sans);letter-spacing:-.01em;color:var(--foreground);background:linear-gradient(135deg,#5A5FF2 0%,#F0A468 100%)}
+.vCard.filled .vAv{box-shadow:0 0 0 2px rgba(182,184,255,.32)}
+.vAv.dash{background:transparent;border:1px dashed rgba(255,255,255,.18);color:var(--muted-foreground);font-weight:600;font-size:12px}
+body:not(.dark) .vAv.dash{border-color:rgba(0,0,0,.18)}
+.vBody{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.vName{font:600 14px var(--font-sans);color:var(--foreground);letter-spacing:-.01em;line-height:1.25;display:flex;align-items:center;gap:6px;min-width:0}
+.vName .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.vBadge{display:inline-flex;align-items:center;font:600 10px var(--font-sans);letter-spacing:.02em;color:#B6B8FF;background:rgba(90,95,242,.14);border:1px solid rgba(182,184,255,.30);padding:1px 7px;border-radius:var(--radius-full);line-height:1.5;flex-shrink:0}
+body:not(.dark) .vBadge{color:#5A5FF2;background:rgba(90,95,242,.10);border-color:rgba(90,95,242,.28)}
+.vName.wait{color:#B6B8FF;font-weight:500}
+.vName.empty{color:var(--muted-foreground);font-weight:500}
+.vMeta{font:400 11px var(--font-sans);color:var(--muted-foreground);display:flex;align-items:center;gap:6px}
+.vTag{font:500 11px var(--font-sans);letter-spacing:.01em;color:var(--muted-foreground)}
+.vPip{width:3px;height:3px;border-radius:50%;background:var(--muted-foreground);opacity:.5}
+.vChk{width:20px;height:20px;border-radius:var(--radius-full);background:rgba(125,220,166,.15);color:#7DDCA6;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.vChk svg{width:12px;height:12px}
+.vChev{width:22px;height:22px;border-radius:var(--radius-full);background:rgba(255,255,255,.04);color:var(--muted-foreground);display:none;align-items:center;justify-content:center;flex-shrink:0;transition:transform .3s cubic-bezier(.2,.7,.3,1)}
+body:not(.dark) .vChev{background:rgba(0,0,0,.04)}
+.vChev svg{width:12px;height:12px;stroke-width:2.4}
+.vCard[data-prospected="true"] .vChev{display:inline-flex}
+.vCard[data-prospected="true"]{cursor:pointer}
+.vCard.expanded .vChev{transform:rotate(180deg)}
+.vHint{font:500 10px var(--font-mono);color:var(--muted-foreground);opacity:.6}
+
+/* prospecting CTA — sits INSIDE .vBar between mic + chat */
+.vProspectPill{display:none;height:44px;padding:0 18px;border-radius:var(--radius-full);border:none;background:#5A5FF2;color:#fff;font:600 13px var(--font-sans);letter-spacing:-.005em;cursor:pointer;align-items:center;gap:8px;box-shadow:0 8px 15px rgba(90,95,242,.35),inset 0 1px 0 0 rgba(255,255,255,.18);transition:opacity .15s;white-space:nowrap;flex:0 1 auto;min-width:0;animation:in .3s ease-out}
+.vProspectPill.on{display:inline-flex}
+.vProspectPill:hover{opacity:.94}
+.vProspectPill:disabled{opacity:.5;cursor:default}
+.vProspectPill svg{width:14px;height:14px;flex-shrink:0}
+.vExpand{width:100%}
+.vCard.expanded{grid-template-rows:auto 1fr;padding-bottom:14px;z-index:1}
+/* top divider inside expand (separates card body from trace) */
+.vExpDiv{height:1px;background:rgba(255,255,255,.08);margin:12px 0 10px}
+body:not(.dark) .vExpDiv{background:rgba(0,0,0,.06)}
+/* channel toggle pills (Text / Email) */
+.vChanRow{display:flex;gap:6px;padding:0 0 12px}
+.vChanPill{flex:1;height:30px;padding:0 12px;border-radius:var(--radius-full);border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.04);color:var(--muted-foreground);font:600 11.5px var(--font-sans);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px;letter-spacing:.01em;transition:all .18s ease}
+body:not(.dark) .vChanPill{border-color:rgba(0,0,0,.08);background:rgba(0,0,0,.03)}
+.vChanPill svg{width:12px;height:12px;stroke-width:2;flex-shrink:0}
+.vChanPill.on{background:rgba(90,95,242,.18);border-color:rgba(182,184,255,.4);color:#B6B8FF}
+body:not(.dark) .vChanPill.on{background:rgba(90,95,242,.12);color:#5A5FF2;border-color:rgba(90,95,242,.35)}
+/* section (Portal / Conversation) — compact */
+.vSect{padding:0 0 10px}
+.vSect:last-child{padding-bottom:0}
+.vSectH{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.vSectH .vSectIco{width:20px;height:20px;border-radius:var(--radius-full);background:rgba(90,95,242,.14);color:#B6B8FF;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.vSectH .vSectIco svg{width:11px;height:11px;stroke-width:2}
+.vSectH .vSectT{font:600 11.5px var(--font-sans);color:var(--foreground);letter-spacing:-.005em}
+/* single message row per section per channel */
+.vSend{display:flex;align-items:flex-start;gap:8px;padding:2px 0 0 28px;font:400 11.5px/1.35 var(--font-sans);opacity:0;transform:translateY(3px);animation:sendIn .28s ease-out forwards;min-height:22px}
+.vSend .vSendBody{flex:1;min-width:0;color:var(--muted-foreground)}
+.vSend .thinking{display:flex;align-items:center;gap:6px;color:var(--muted-foreground);font-style:italic}
+.vSend .thinking .vDots{margin-left:2px}
+.vSend .thinking .vDots span{width:4px;height:4px;background:var(--muted-foreground);animation:vDot 1.1s ease-in-out infinite}
+.vSend .thinking .vDots span:nth-child(2){animation-delay:.14s}
+.vSend .thinking .vDots span:nth-child(3){animation-delay:.28s}
+.vSend .content{display:none}
+.vSend .content em{font-style:normal;color:var(--foreground);display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%;font-weight:500}
+.vSend.sent .thinking{display:none}
+.vSend.sent .content{display:block;animation:sendIn .28s ease-out}
+@keyframes sendIn{to{opacity:1;transform:translateY(0)}}
+
+/* skeleton loader — appears in .vBody during processing */
+.vSkel{display:flex;flex-direction:column;gap:6px;flex:1;min-width:0;padding:2px 0}
+.vSkel span{display:block;height:9px;border-radius:4px;background:linear-gradient(90deg,rgba(255,255,255,.03) 0%,rgba(182,184,255,.18) 50%,rgba(255,255,255,.03) 100%);background-size:200% 100%;animation:skelShim 1.1s ease-in-out infinite}
+.vSkel span:nth-child(1){width:55%;height:11px}
+.vSkel span:nth-child(2){width:82%}
+.vSkel span:nth-child(3){width:38%}
+body:not(.dark) .vSkel span{background:linear-gradient(90deg,rgba(0,0,0,.04) 0%,rgba(90,95,242,.16) 50%,rgba(0,0,0,.04) 100%);background-size:200% 100%}
+@keyframes skelShim{0%{background-position:200% 0}100%{background-position:-200% 0}}
+@media (prefers-reduced-motion:reduce){.vSkel span{animation:none}}
+/* vState clickable affordance when waiting */
+.vState.clickable{cursor:pointer;transition:opacity .15s}
+.vState.clickable:hover{opacity:.85}
+/* speaker labels + user-speaking dots */
+.spMel{color:#B6B8FF;font-weight:600;letter-spacing:.01em}
+.spYou{color:var(--muted-foreground);font-weight:600;letter-spacing:.01em}
+body:not(.dark) .spMel{color:#5A5FF2}
+.vDots{display:inline-flex;gap:3px;margin-left:8px;vertical-align:middle}
+.vDots span{width:5px;height:5px;border-radius:50%;background:#B6B8FF}
+.vRoot[data-vstate="listening"] .vDots span{animation:vDot 1.1s ease-in-out infinite}
+.vRoot[data-vstate="listening"] .vDots span:nth-child(2){animation-delay:.14s}
+.vRoot[data-vstate="listening"] .vDots span:nth-child(3){animation-delay:.28s}
+@keyframes vDot{0%,80%,100%{opacity:.25;transform:scale(.8)}40%{opacity:1;transform:scale(1)}}
+@media (prefers-reduced-motion:reduce){.vDots span{animation:none!important}}
+
+/* bottom bar — 3 icons across width */
+.vBar{margin-top:auto;padding:16px 24px 38px;display:flex;justify-content:space-between;align-items:center;position:relative;z-index:2}
+.vBtn{width:52px;height:52px;border-radius:var(--radius-full);background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.05);display:flex;align-items:center;justify-content:center;color:var(--foreground);cursor:pointer;transition:all .18s ease;padding:0}
+body:not(.dark) .vBtn{background:rgba(0,0,0,.04);border-color:rgba(0,0,0,.06)}
+.vBtn:hover{background:rgba(255,255,255,.10)}
+body:not(.dark) .vBtn:hover{background:rgba(0,0,0,.07)}
+.vBtn svg{width:22px;height:22px;stroke-width:2}
+.vBtn .off{display:none}
+.vBtn.muted{background:rgba(220,38,38,.10);border-color:rgba(220,38,38,.45);color:var(--destructive)}
+.vBtn.muted .on{display:none}
+.vBtn.muted .off{display:block}
+
+.chatlink{background:none;border:none;font:500 13px var(--font-sans);color:var(--muted-foreground);cursor:pointer;text-decoration:underline;display:none}
+.clientcard{width:100%;text-align:left;margin-top:16px}
+.slot{border:1px dashed var(--border);border-radius:var(--radius-md);padding:10px 12px;font-size:14px;color:var(--muted-foreground);margin-top:8px}
+.slot.done{border-style:solid;color:var(--foreground)}
+.slot.active{border-style:solid;border-color:var(--primary);color:var(--foreground)}
+.youpill{font:600 11px var(--font-sans);color:var(--primary);display:flex;justify-content:space-between;align-items:center}
+.receipt{width:100%;text-align:left;margin-top:10px;display:flex;gap:10px;align-items:flex-start}
+.ricon{width:32px;height:32px;border-radius:50%;background:var(--muted);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--color-green)}
+.rw{font:600 14px var(--font-sans)}
+.rs2{font-size:12px;color:var(--muted-foreground);margin-top:2px}
+.sendline{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted-foreground);margin-top:10px;width:100%;text-align:left}
+.rowbtns{display:flex;gap:8px;width:100%;margin-top:14px}
+.rowbtns .btn{flex:1}
+
+/* mel intro — screen 5, exact web parity port (Figma 506:36727) */
+#s-intro{gap:0;padding:40px 16px 38px;position:relative;overflow:hidden;background:#0a0a14}
+body:not(.dark) #s-intro{background:#0a0a14} /* dark bg in both themes — matches web */
+/* ambient background blobs (scaled from web canvas) */
+.introBg{position:absolute;inset:0;pointer-events:none;overflow:hidden;z-index:0}
+.introBg span{position:absolute;border-radius:50%;filter:blur(60px)}
+.introBg .b1{left:-40%;bottom:-8%;width:110%;height:52%;background:radial-gradient(50% 50% at 50% 50%,rgba(140,90,255,.42) 0%,transparent 75%);opacity:.74}
+.introBg .b2{right:-40%;bottom:-6%;width:110%;height:50%;background:radial-gradient(50% 50% at 50% 50%,rgba(96,165,250,.38) 0%,transparent 75%);opacity:.72}
+.introBg .b3{left:10%;bottom:-14%;width:80%;height:38%;background:radial-gradient(50% 50% at 50% 50%,rgba(244,114,182,.22) 0%,transparent 75%);opacity:.58;filter:blur(52px)}
+.introBg .b4{left:20%;top:-14%;width:70%;height:32%;background:radial-gradient(50% 50% at 50% 50%,rgba(240,128,104,.22) 0%,transparent 70%);filter:blur(40px)}
+#s-intro > *:not(.introBg){position:relative;z-index:1}
+.introhero{display:flex;flex-direction:column;align-items:center;text-align:center;padding:2px 0 16px}
+.introhero .intromel{width:96px;height:96px;position:relative;flex-shrink:0;margin:0 auto 16px;filter:drop-shadow(0 8px 24px rgba(91,72,154,.38))}
+.introhero .intromel img{position:absolute;inset:0;width:100%;height:100%;display:block}
+.introhero .eyebrow{font:600 11px var(--font-sans);letter-spacing:.16em;text-transform:uppercase;color:#A1A3FF;margin:0 0 10px}
+.introhero h1{font:700 26px/1.18 var(--font-sans);margin:0;text-wrap:balance;color:#F4F4F5;letter-spacing:-.015em}
+.introhero .sub{font-size:14px;color:#A1A1AA;margin:10px 0 0;text-wrap:pretty;line-height:1.5;max-width:34ch}
+.introhero .sub b{color:#C4B5FD;font-weight:500}
+/* swipeable card rail — edge-bleed */
+.agentswipe{display:flex;gap:12px;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;scroll-padding-left:16px;padding:4px 16px 14px;margin:0 -16px;scrollbar-width:none;-webkit-overflow-scrolling:touch;align-items:stretch;touch-action:pan-x;overscroll-behavior-x:contain;width:calc(100% + 32px);max-width:calc(100% + 32px);cursor:grab;user-select:none}
+.agentswipe:active{cursor:grabbing}
+.agentswipe::-webkit-scrollbar{display:none}
+.agent-card{position:relative;overflow:hidden;border-radius:14px;padding:14px;text-align:left;isolation:isolate;flex:0 0 84%;scroll-snap-align:start;min-height:140px;display:flex;flex-direction:column;background:linear-gradient(180deg,color-mix(in srgb,var(--acc) 10%,transparent) 0%,rgba(255,255,255,.02) 100%);border:1px solid color-mix(in srgb,var(--acc) 24%,transparent)}
+.agent-card::before{content:"";position:absolute;left:50%;top:-50px;transform:translateX(-50%);width:220px;height:100px;background:radial-gradient(50% 100% at 50% 100%,color-mix(in srgb,var(--acc) 34%,transparent) 0%,transparent 72%);filter:blur(20px);pointer-events:none;z-index:0}
+.agent-card > *{position:relative;z-index:1}
+.agent-card .aicon{width:30px;height:30px;border-radius:9px;background:color-mix(in srgb,var(--acc) 16%,transparent);border:1px solid color-mix(in srgb,var(--acc) 28%,transparent);display:inline-flex;align-items:center;justify-content:center;padding:1px}
+.agent-card .aicon img{width:15px;height:15px;display:block}
+.agent-card .ak{font:600 10.5px var(--font-sans);letter-spacing:.1em;text-transform:uppercase;color:var(--ac-label);margin-top:12px;line-height:1}
+.agent-card .av{font:600 15px var(--font-sans);color:#F4F4F5;margin:10px 0 0;line-height:1.35}
+.agent-card .ad{font-size:12px;color:#A1A1AA;margin-top:4px;line-height:1.55}
+/* per-card accents — exact Figma tokens */
+.agent-card.a-nurture{--acc:#C4A2FC;--ac-label:#DDCCFF}
+.agent-card.a-crm{--acc:#6EE7C7;--ac-label:#A7F3D0}
+.agent-card.a-marketing{--acc:#F48FB1;--ac-label:#FFC4D9}
+.agent-card.a-documentation{--acc:#7B7FF5;--ac-label:#C7C9FF}
+.agent-card.a-support{--acc:#A4D46A;--ac-label:#D3ECAD}
+/* swipe dots */
+.swipedots{display:flex;justify-content:center;gap:6px;margin-top:8px}
+.swipedots span{width:5px;height:5px;border-radius:var(--radius-full);flex-shrink:0;background:rgba(255,255,255,.14);transition:width .2s,background .2s}
+.swipedots span.on{width:16px;background:#5A5FF2}
+#s-intro .footer{padding-top:22px;margin-top:auto}
+#s-intro .footer .btn{width:auto;max-width:none;min-width:230px;height:50px;margin:0 auto;background:#5A5FF2;color:#fff;font:600 15px var(--font-sans);box-shadow:0 8px 15px rgba(90,95,242,.45),inset 0 1px 0 0 rgba(255,255,255,.18);border-radius:9999px;gap:10px;padding:0 28px;white-space:nowrap;flex-shrink:0}
+#s-intro .footer .btn img{width:16px;height:16px}
+
+/* chat */
+.chatscroll{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:10px;padding-top:2px}
+.bub{max-width:82%;padding:10px 13px;border-radius:var(--radius-xl);font-size:14px;background:var(--muted);align-self:flex-start}
+.bub.me{background:var(--primary);color:var(--primary-foreground);align-self:flex-end}
+.chatEmpty{flex:1;display:flex;flex-direction:column;justify-content:center;min-height:0}
+.chatHero{display:flex;flex-direction:column;align-items:center;text-align:center;padding:10px 6px 2px;flex-shrink:0}
+.chatHero .mellogo{width:68px;height:68px;margin:0 auto 14px;filter:drop-shadow(0 8px 22px rgba(91,72,154,.36))}
+.chatHero h1{font:700 19px/1.25 var(--font-sans);margin:0;color:var(--foreground);letter-spacing:-.01em}
+.chatHero .sub{font-size:12.5px;color:var(--muted-foreground);margin:6px 0 0;max-width:32ch;line-height:1.45}
+.promptswipe{display:flex;gap:10px;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;scroll-padding-left:20px;padding:16px 20px 4px;margin:0 -20px;scrollbar-width:none;-webkit-overflow-scrolling:touch;touch-action:pan-x;overscroll-behavior-x:contain;width:calc(100% + 40px);cursor:grab;user-select:none;flex-shrink:0}
+.promptswipe::-webkit-scrollbar{display:none}
+.promptswipe:active{cursor:grabbing}
+.pcard{position:relative;flex:0 0 76%;scroll-snap-align:start;border-radius:16px;padding:16px 16px 18px;cursor:pointer;overflow:hidden;background:linear-gradient(160deg,#2C2065 0%,#150E30 100%);border:1px solid rgba(182,184,255,.22);box-shadow:0 6px 18px -6px rgba(30,18,70,.3)}
+body.dark .pcard{box-shadow:none}
+.pcard .psparkle{position:absolute;top:15px;right:15px;color:rgba(255,255,255,.5);width:16px;height:16px}
+.pcard .sk{font:700 11px var(--font-sans);letter-spacing:.06em;text-transform:uppercase;color:#B6B8FF;display:block}
+.pcard .pcat{font:400 12.5px var(--font-sans);color:rgba(255,255,255,.42);margin-top:3px}
+.pcard .pdiv{height:1px;background:rgba(182,184,255,.16);margin:13px 0}
+.pcard .sv{font:400 13px/1.45 var(--font-sans);color:#F4F4F5;padding-right:6px}
+.composer{margin-top:10px;display:flex;flex-direction:column;gap:0;border:1px solid var(--input);background:var(--background);border-radius:var(--radius-xl);padding:16px 14px 12px;flex-shrink:0}
+body.dark .composer{background:var(--card)}
+.composer input{width:100%;border:none;background:transparent;color:var(--foreground);font:400 15px var(--font-sans);outline:none;min-width:0;padding:0 0 16px}
+.composerRow{display:flex;gap:8px;align-items:center;margin-top:2px}
+.composerChips{display:none;gap:16px;padding:2px 1px 10px;border-top:1px solid var(--border)}
+.composerChips.open{display:flex}
+.chip{display:flex;align-items:center;gap:5px;background:none;border:none;color:var(--muted-foreground);font:500 11px var(--font-sans);cursor:pointer;padding:0}
+.chip svg{flex-shrink:0}
+.chatdisclaimer{font-size:10.5px;color:var(--muted-foreground);text-align:center;margin-top:9px;opacity:.68;flex-shrink:0}
+.iconbtn{width:30px;height:30px;border-radius:50%;border:none;background:var(--secondary);color:var(--secondary-foreground);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}
+.iconbtn.primary{background:var(--primary);color:var(--primary-foreground)}
+.plusbtn.on{background:var(--primary);color:var(--primary-foreground);transform:rotate(45deg)}
+.dictbtn{background:transparent;color:var(--muted-foreground)}
+.mel-voice-pill{height:30px;padding:0 12px 0 6px;border-radius:var(--radius-full);display:flex;align-items:center;gap:6px;font:600 12px var(--font-sans);cursor:pointer;flex-shrink:0;transition:transform .15s;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);backdrop-filter:blur(20px) saturate(140%);-webkit-backdrop-filter:blur(20px) saturate(140%)}
+body:not(.dark) .mel-voice-pill{background:rgba(255,255,255,.55);border:1px solid rgba(0,0,0,.06)}
+.mel-voice-pill span{background:linear-gradient(90deg,#DBDBFD 0%,#787EED 100%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:#787EED}
+.mel-voice-pill img{width:20px;height:20px;display:block}
+.mel-voice-pill:active{transform:scale(.94)}
+#s-chat{position:relative}
+.chatClose{position:absolute;top:6px;right:20px;z-index:5;width:32px;height:32px}
+.chatClose svg{width:15px;height:15px}
+
+/* ── screen 7 · Home dashboard (1:1 Figma port, node 106:1039) ── */
+#s-home{position:relative;padding:0;background:#08080c;display:none;flex-direction:column;overflow:hidden}
+#s-home.on{display:flex}
+#s-home img{display:block}
+.hm-status{display:flex;align-items:center;justify-content:space-between;padding:14px 24px 8px;flex-shrink:0}
+.hm-status .hm-time{font:600 15px var(--font-sans);color:#fff}
+.hm-statusicons{display:flex;gap:6px;align-items:center}
+.hm-statusicons img:nth-child(1){width:18px;height:11px}
+.hm-statusicons img:nth-child(2){width:16px;height:11px}
+.hm-statusicons img:nth-child(3){width:25px;height:11px}
+.hm-header{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;flex-shrink:0}
+.hm-badge{width:40px;height:40px;border-radius:20px;background:#2a2f3d;display:flex;align-items:center;justify-content:center;position:relative;flex-shrink:0}
+.hm-badge span{font:700 18px var(--font-sans);color:#fff}
+.hm-badge img{position:absolute;top:0;right:0;width:10px;height:10px}
+.hm-bell{width:40px;height:40px;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:none;border:none;cursor:pointer}
+.hm-bell img{width:24px;height:24px}
+.hm-greet{padding:8px 16px 16px;flex-shrink:0}
+.hm-greet p{font:700 32px var(--font-sans);color:#fff;margin:0}
+.hm-main{display:flex;flex-direction:column;gap:20px;padding:0 16px 24px;overflow-y:auto;flex:1}
+.hm-quick{display:flex;gap:12px}
+.hm-qcard{flex:1;background:#111115;border:1px solid #1d1e26;border-radius:20px;padding:16px;display:flex;flex-direction:column;align-items:center;gap:8px;cursor:pointer}
+.hm-qico{width:44px;height:44px;border-radius:12px;background:#1c2136;display:flex;align-items:center;justify-content:center}
+.hm-qico img{width:24px;height:24px}
+.hm-qcard p{font:500 14px var(--font-sans);color:#fff;margin:0}
+.hm-mel{background:linear-gradient(90deg,#14142f,#0a0a10);border:1.5px solid #27273f;border-radius:24px;padding:20px;display:flex;align-items:center;justify-content:space-between;cursor:pointer}
+.hm-mel-txt{display:flex;flex-direction:column;gap:12px;max-width:210px}
+.hm-mel-brand{display:flex;gap:6px;align-items:center}
+.hm-mel-brand img{width:24px;height:12px}
+.hm-mel-brand span{font:700 18px var(--font-sans);color:#e2ac7e}
+.hm-mel-txt h3{font:600 20px/26px var(--font-sans);color:#fff;margin:0}
+.hm-mel-txt p{font:400 13px/18px var(--font-sans);color:#8e8e9f;margin:0}
+.hm-mel-orb{width:76px;height:76px;border-radius:38px;border:2px solid #423b8c;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:radial-gradient(circle at 50% 50%,#3b2ea6 0%,#2c256b 50%,#24214e 75%,#1c1c30 100%)}
+.hm-mel-orb img{width:28px;height:28px}
+.hm-aicard{background:#111115;border:1px solid #1d1e26;border-radius:24px;padding:18px;display:flex;flex-direction:column;gap:16px}
+.hm-aicard-top{display:flex;align-items:center;justify-content:space-between}
+.hm-aicard-tag{display:flex;gap:6px;align-items:center}
+.hm-aicard-tag img{width:18px;height:18px}
+.hm-aicard-tag span{font:700 11px var(--font-sans);letter-spacing:1px;color:#8e8e9f}
+.hm-aicard-x{width:16px;height:16px;cursor:pointer}
+.hm-aicard h3{font:700 18px var(--font-sans);color:#fff;margin:0}
+.hm-aicard p{font:400 13px/18px var(--font-sans);color:#8e8e9f;margin:4px 0 0}
+.hm-aicard-btnrow{display:flex;align-items:center;justify-content:space-between}
+.hm-learnbtn{background:var(--primary);color:var(--primary-foreground);border:none;border-radius:18px;padding:10px 20px;font:600 14px var(--font-sans);cursor:pointer}
+.hm-aicard-count{font:500 13px var(--font-sans);color:#8e8e9f}
+.hm-progress{display:flex;gap:8px;justify-content:center;padding:12px 0}
+.hm-progress span{width:60px;height:4px;border-radius:2px;background:#5a5b6a}
+.hm-progress span.on{background:#fff}
+.hm-sectlbl{display:flex;gap:8px;align-items:center}
+.hm-sectlbl .hm-chip{width:26px;height:26px;border-radius:63px;background:#262a41;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.hm-sectlbl .hm-chip img{width:16px;height:16px}
+.hm-sectlbl span{font:600 14px var(--font-sans);color:#fdfdfd;letter-spacing:.5px}
+.hm-topics-row{display:flex;justify-content:space-between;align-items:center}
+.hm-topics-track{display:flex;gap:12px;margin-top:4px}
+.hm-topic{border-radius:20px;padding:16px;height:100px;display:flex;flex-direction:column;gap:6px;flex-shrink:0}
+.hm-topic.market{background:#634edf;width:260px}
+.hm-topic.help{background:#0ca779;width:180px}
+.hm-topic h4{font:700 18px var(--font-sans);color:#fff;margin:0}
+.hm-topic p{font:400 12px/16px var(--font-sans);color:rgba(255,255,255,.8);margin:0}
+.hm-section{display:flex;flex-direction:column;gap:12px}
+.hm-viewall{font:600 14px var(--font-sans);color:#fdfdfd;letter-spacing:.5px;cursor:pointer}
+.hm-viewall.hidden{color:transparent;cursor:default}
+.hm-queueitem{border:1px solid #7066f0;background:rgba(30,30,30,.1);border-radius:16px;padding:8px 16px 8px 12px}
+.hm-queueitem .addr{font:600 15px var(--font-sans);color:#e0e0e0;margin:0}
+.hm-qdiv{height:1px;background:rgba(255,255,255,.1);margin:8px 0}
+.hm-queuemeta{display:flex;align-items:center;justify-content:space-between}
+.hm-queueperson{display:flex;gap:4px;align-items:center}
+.hm-queueperson img{width:17px;height:17px;border-radius:50%}
+.hm-queueperson span{font:400 11px var(--font-sans);color:#b1c6ff}
+.hm-queuedate{display:flex;gap:4px;align-items:center}
+.hm-queuedate img{width:16px;height:16px}
+.hm-queuedate span{font:400 11px var(--font-sans);color:#b1c6ff}
+.hm-stats{display:flex;flex-direction:column;gap:7px}
+.hm-statrow{display:flex;gap:7px}
+.hm-stat{flex:1;border-radius:19px;border:1px solid;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:16px 8px;text-align:center}
+.hm-stat.green{background:linear-gradient(180deg,#2a452a,#3e5f3e);border-color:#437343}
+.hm-stat.blue{background:linear-gradient(180deg,#2a4550,#3e5f7e);border-color:#3e6d98}
+.hm-stat.brown{background:linear-gradient(180deg,#3e352a,#5e4e3e);border-color:#715a43}
+.hm-stat.purple{background:linear-gradient(180deg,#3a2e45,#4e3e5e);border-color:#4e3e5e}
+.hm-stat b{font:600 20px var(--font-sans);color:#fff}
+.hm-stat .lbl1{font:500 12px var(--font-sans);color:#fff}
+.hm-stat .lbl2{font:500 12px var(--font-sans);color:rgba(255,255,255,.5)}
+.hm-appt{display:flex;align-items:center;gap:12px;min-height:72px;padding:8px 16px 8px 8px;border-radius:9px;cursor:pointer}
+.hm-appt.outline{background:rgba(90,95,242,.1);border:1px solid #b6b8ff;border-radius:8px}
+.hm-appt.solid{background:var(--primary)}
+.hm-appt-ico{width:32px;height:30px;border-radius:7px;background:#818cf8;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.hm-appt-ico img{width:20px;height:20px}
+.hm-appt-txt{flex:1}
+.hm-appt-txt .t1{font:500 16px var(--font-sans);color:#fdfdfd;margin:0}
+.hm-appt-txt .t2{font:400 14px var(--font-sans);color:#fdfdfd;margin:0}
+.hm-appt img.chev{width:24px;height:24px}
+.hm-tabbar{display:flex;justify-content:space-between;padding:12px 16px 20px;border-top:1px solid #1d1e26;background:#08080c;flex-shrink:0}
+.hm-tab{display:flex;flex-direction:column;align-items:center;gap:4px;width:80px;cursor:pointer;background:none;border:none}
+.hm-tab img{width:22px;height:22px}
+.hm-tab span{font:600 11px var(--font-sans);color:#8e8e9f}
+.hm-tab.on span{color:#586afe}
+.hm-fab{position:absolute;left:314px;top:112px;width:48px;height:48px;border-radius:9999px;border:1.5px solid #b6b8ff;overflow:hidden;background:linear-gradient(266deg,#10081f 13%,#2d1b69 58%,#10081f 130%);box-shadow:6px 5px 50px 10px rgba(91,72,154,.5);display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:6}
+.hm-fab img.mel-icon-bg{position:absolute;left:4.5px;top:-10.5px;width:65px;height:65px;opacity:.15}
+.hm-fab img.mic-fg{width:24px;height:24px;position:relative}
+.chathead{display:flex;justify-content:space-between;align-items:center;padding-bottom:8px;border-bottom:1px solid var(--border)}
+.chathead .ct{font:600 15px var(--font-sans);display:flex;gap:8px;align-items:center}
+.pillbtn{height:30px;padding:0 12px;border-radius:var(--radius-full);border:1px solid var(--border);background:var(--card);color:var(--foreground);font:500 12px var(--font-sans);cursor:pointer;display:flex;align-items:center;gap:5px}
+i[data-lucide]{width:16px;height:16px}
+
+/* ── dev panel · screen 4 only · outside phone shell (from screen-4-add-clients.html) ── */
+.stagedev{display:none}
+.stagedev.active{display:block}
+.stagedev .devfab{position:fixed;right:28px;bottom:28px;z-index:100;width:52px;height:52px;border-radius:9999px;background:#18181B;color:#fff;border:1px solid #18181B;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 12px 32px -8px rgba(0,0,0,.35),0 4px 10px -2px rgba(0,0,0,.15);transition:all .18s cubic-bezier(.2,.7,.3,1)}
+.stagedev .devfab:hover{transform:translateY(-2px);box-shadow:0 16px 36px -8px rgba(0,0,0,.4)}
+.stagedev .devfab svg{width:20px;height:20px;transition:transform .25s ease}
+.stagedev .devfab.open{background:#fff;color:#18181B;border-color:#E4E4E7}
+.stagedev .devfab.open svg{transform:rotate(45deg)}
+.stagedev .devpop{position:fixed;right:28px;bottom:92px;z-index:99;width:340px;max-height:calc(100vh - 140px);overflow-y:auto;background:#fff;border:1px solid #E4E4E7;border-radius:14px;box-shadow:0 24px 60px -12px rgba(0,0,0,.24),0 0 0 1px rgba(0,0,0,.02);opacity:0;transform:translateY(8px) scale(.98);transform-origin:bottom right;pointer-events:none;transition:opacity .18s ease,transform .22s cubic-bezier(.2,.7,.3,1)}
+.stagedev .devpop.open{opacity:1;transform:translateY(0) scale(1);pointer-events:auto}
+.stagedev .devpop::-webkit-scrollbar{width:6px}
+.stagedev .devpop::-webkit-scrollbar-thumb{background:#E4E4E7;border-radius:3px}
+.stagedev .devTabs{display:flex;padding:12px 12px 0;gap:4px;position:sticky;top:0;background:#fff;z-index:2;border-bottom:1px solid #F4F4F5}
+.stagedev .devTab{flex:1;padding:8px 10px;border-radius:6px 6px 0 0;text-align:center;font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#71717A;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px}
+.stagedev .devTab.on{color:#18181B;border-bottom-color:#18181B}
+.stagedev .devBody{padding:14px 16px 16px}
+.stagedev .devBody.hide{display:none}
+.stagedev .devBody h4{margin:0 0 6px;font:700 10px var(--font-sans);letter-spacing:.14em;text-transform:uppercase;color:#71717A}
+.stagedev .devBody h4:not(:first-child){margin-top:14px}
+.stagedev .devGrp{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 0}
+.stagedev .devBody button{all:unset;cursor:pointer;font-family:var(--font-sans);font-size:12px;font-weight:500;color:#18181B;padding:6px 10px;border-radius:6px;background:#F4F4F5;border:1px solid transparent;transition:all .12s ease;text-align:center}
+.stagedev .devBody button:hover{background:#E4E4E7}
+.stagedev .devBody button.on{background:#18181B;color:#fff;border-color:#18181B}
+.stagedev .devRow2{display:flex;gap:6px;margin-top:6px}
+.stagedev .devRow2 button{flex:1}
+.stagedev .devDiv{height:1px;background:#F4F4F5;margin:10px 0 0}
+.stagedev .devNote{font:400 11px var(--font-sans);color:#71717A;line-height:1.45;margin:10px 0 0}
+.stagedev .devNote b{color:#18181B;font-weight:600}
+.stagedev .devSpec{margin:6px 0 0;padding:0;list-style:none;font-size:12px;line-height:1.5;color:#3F3F46}
+.stagedev .devSpec li{padding:6px 0;border-bottom:1px solid #F4F4F5;display:flex;gap:8px}
+.stagedev .devSpec li:last-child{border-bottom:0}
+.stagedev .devSpec li b{color:#18181B;min-width:80px;flex-shrink:0;font-weight:600}
+.stagedev .devSpec code{background:#F4F4F5;padding:1px 5px;border-radius:4px;font-size:11px;font-family:var(--font-mono)}
+@media (max-width:800px){.stagedev{display:none!important}}
+</style>
+</head>
+<body>
+<div class="stage">
+  <div class="topbar">
+    <div class="navpills" id="navpills" aria-label="Screen switcher (dev)">
+      <button class="npill on" data-scr="details" onclick="jumpTo('details')" title="Details">1</button>
+      <button class="npill" data-scr="otp" onclick="jumpTo('otp')" title="OTP">2</button>
+      <button class="npill" data-scr="connect" onclick="jumpTo('connect')" title="Connect Gmail + number">3</button>
+      <button class="npill" data-scr="voice" onclick="jumpTo('voice')" title="Voice · clients">4</button>
+      <button class="npill" data-scr="intro" onclick="jumpTo('intro')" title="Mel intro">5</button>
+      <button class="npill" data-scr="chat" onclick="jumpTo('chat')" title="Chat">6</button>
+      <button class="npill" data-scr="home" onclick="jumpTo('home')" title="Home dashboard">7</button>
+    </div>
+    <button class="themebtn" onclick="toggleTheme()">Theme: auto</button>
+  </div>
+
+  <div class="phone" id="phone">
+    <div class="notif" id="notif" onclick="notifTap()">
+      <div class="nfrom"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><span id="notifFrom">Messages</span></div>
+      <div class="nbody" id="notifBody"></div>
+    </div>
+    <div class="statusbar"><span>9:41</span><span id="stepdot">1 / 6</span></div>
+
+    <!-- 1 · Details (web parity: single form, state inline) -->
+    <div class="screen on" id="s-details">
+      <div class="mellogo" style="margin:8px 0 16px"><img src="assets/mel-intro/orb-fill.svg" alt=""><img src="assets/mel-intro/orb-inf.svg" alt=""></div>
+      <h1>Your AI is ready. Let's introduce you.</h1>
+      <p class="sub">Create your account in seconds and let Mel do the rest.</p>
+      <div class="lbl">Full name <span class="req">*</span></div>
+      <input class="inp" id="fName" placeholder="sofia davis" value="Sofia Davis">
+      <div class="lbl">Work email <span class="req">*</span></div>
+      <input class="inp" id="fEmail" placeholder="name@company.com" value="sofia@example.com">
+      <div class="lbl">Phone number <span class="req">*</span></div>
+      <input class="inp" id="fPhone" placeholder="(555) 000-0000" inputmode="tel" value="(555) 012-3456">
+      <div class="lbl">Your role <span class="req">*</span></div>
+      <div class="rolegrid">
+        <div class="role sel" id="roleA" onclick="pickRole('A')"><div class="ric"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg></div><div><div class="rt">Individual agent</div><div class="rs">Just me</div></div></div>
+        <div class="role" id="roleB" onclick="pickRole('B')"><div class="ric"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div><div><div class="rt">Team lead</div><div class="rs">I manage agents</div></div></div>
+      </div>
+      <div class="lbl">Where do you sell? <span class="req">*</span></div>
+      <button class="fieldbtn" id="stateBtn" onclick="openSheet()"><span id="stateVal">Select your primary state</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:0 0 16px"><polyline points="6 9 12 15 18 9"/></svg></button>
+      <div class="waitnote" id="waitnote" style="margin-top:8px">We're not live here yet. Join the waitlist and we'll text you the day it opens.</div>
+      <div class="footer"><button class="btn" id="stateNext" disabled onclick="go('otp')">Next</button></div>
+    </div>
+
+    <!-- 3 · OTP -->
+    <div class="screen" id="s-otp">
+      <div class="mellogo" style="margin:0 0 16px"><img src="assets/mel-intro/orb-fill.svg" alt=""><img src="assets/mel-intro/orb-inf.svg" alt=""></div>
+      <h1>Verification code</h1>
+      <p class="sub">We've sent a 6-digit code to <strong id="otpPhone">(555) 012-3456</strong> via message &amp; email to activate your account.</p>
+      <div class="lbl">Verification code</div>
+      <div class="otprow" id="otpRow" onclick="otpFocus()">
+        <div class="toast" id="otpToast">Code sent</div>
+        <div class="otpbox" data-i="0"></div><div class="otpbox" data-i="1"></div><div class="otpbox" data-i="2"></div>
+        <div class="otpbox" data-i="3"></div><div class="otpbox" data-i="4"></div><div class="otpbox" data-i="5"></div>
+        <input class="otphidden" id="otpInput" inputmode="numeric" maxlength="6" autocomplete="one-time-code" aria-label="Verification code" oninput="otpType(this.value)" onfocus="otpType(this.value)" onblur="document.querySelectorAll('.otpbox').forEach(b=>b.classList.remove('active'))">
+      </div>
+      <div class="err" id="otpErr" style="text-align:center">That code didn't match. Try again.</div>
+      <div class="resendrow">
+        <span id="resendLabel">Didn't get the code?</span>
+        <button class="resendbtn" id="resendBtn" disabled onclick="resendOtp()">Resend in 30s</button>
+      </div>
+      <div class="footer"><button class="btn" id="otpBtn" disabled onclick="otpVerify()">Verify</button></div>
+    </div>
+
+    <!-- 3 · Connect Gmail (top of combined screen; number section reveals on success) -->
+    <div class="screen" id="s-connect">
+      <div class="gmhero">
+        <div class="mellogo"><img src="assets/mel-intro/orb-fill.svg" alt=""><img src="assets/mel-intro/orb-inf.svg" alt=""></div>
+        <h1 id="connectH">Turn your inbox into your pipeline.</h1>
+      </div>
+
+      <div class="secTitleRow">
+        <div class="secIco"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg></div>
+        <h2 class="secH">Connect your Gmail account</h2>
+      </div>
+      <p class="secSub">Sign in securely with your Google account.</p>
+
+      <div class="glasscard" id="gmailCard">
+        <button class="gbtn" id="gmBtn" onclick="gmailConnect()">
+          <svg class="gg" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <path fill="#FFC107" d="M43.611 20.083H42V20H24v8h11.303c-1.649 4.657-6.08 8-11.303 8-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 12.955 4 4 12.955 4 24s8.955 20 20 20 20-8.955 20-20c0-1.341-.138-2.65-.389-3.917z"/>
+            <path fill="#FF3D00" d="M6.306 14.691l6.571 4.819C14.655 15.108 18.961 12 24 12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 16.318 4 9.656 8.337 6.306 14.691z"/>
+            <path fill="#4CAF50" d="M24 44c5.166 0 9.86-1.977 13.409-5.192l-6.19-5.238A11.91 11.91 0 0 1 24 36c-5.202 0-9.619-3.317-11.283-7.946l-6.522 5.025C9.505 39.556 16.227 44 24 44z"/>
+            <path fill="#1976D2" d="M43.611 20.083H42V20H24v8h11.303a12.04 12.04 0 0 1-4.087 5.571l.003-.002 6.19 5.238C36.971 39.205 44 34 44 24c0-1.341-.138-2.65-.389-3.917z"/>
+          </svg>
+          <span id="gmBtnLbl">Continue with Google</span>
+        </button>
+        <div class="gmerr" id="gmErr">Sign-in was cancelled. Gmail is required to continue.</div>
+        <div class="trustrow">
+          <div class="trust"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>Encrypted</div>
+          <div class="trust"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>Disconnect anytime</div>
+        </div>
+      </div>
+
+      <div class="connectedrow" id="gmConnected">
+        <span class="cchk"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>
+        <span class="cemail" id="gmEmail">sofia@gmail.com</span>
+        <button class="linkbtn" onclick="gmailReset()">Change</button>
+      </div>
+
+      <div class="numsec" id="numsec">
+        <hr class="secDiv">
+        <div class="secTitleRow">
+          <div class="secIco"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg></div>
+          <h2 class="secH">Claim your business number</h2>
+        </div>
+        <p class="secSub">Mel texts and calls from this number. Pick a familiar area code.</p>
+        <div class="lbl">Area code</div>
+        <div style="display:flex;gap:8px">
+          <input class="inp" id="area" placeholder="512" inputmode="numeric" maxlength="3" style="width:90px;text-align:center" oninput="onAreaInput(this.value)">
+          <button class="btn secondary" style="flex:1;height:44px" onclick="genNumbers()">Find available numbers</button>
+        </div>
+        <div class="err" id="areaErr">Enter a 3-digit area code.</div>
+        <div id="numlist"></div>
+      </div>
+      <div class="footer hide" id="claimFooter"><button class="btn" id="claimBtn" disabled onclick="requestVoiceEntry()">Claim this number</button></div>
+    </div>
+
+    <!-- 4 · Voice — add clients -->
+    <div class="screen voicewrap" id="s-voice">
+      <div class="vRoot" id="vRoot" data-vstate="listening" data-cc="off">
+
+        <div class="vTop">
+          <button class="vIcoBtn" id="vCcBtn" onclick="vToggleCC()" aria-label="Live captions">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"></rect><path d="M7 15h4M15 15h2M7 11h2M13 11h4"></path></svg>
+          </button>
+        </div>
+
+        <div class="orb" id="vOrb" data-vstate="listening" onclick="vCycleState()">
+          <img class="melS4" src="assets/mel-intro/orb-fill.svg" alt="">
+        </div>
+
+        <div class="vState" id="vCap">Say a name…</div>
+        <div class="vStateSub" id="vSub" style="text-align:center">Client 2 · optional</div>
+
+        <div class="vCaps" id="vCaps">
+          <div class="vCapLine"><span class="vCapWho">Mel</span><span id="vCapMel">Who should I add next?</span></div>
+          <div class="vCapLine"><span class="vCapWho">You</span><span id="vCapYou">…</span></div>
+        </div>
+
+        <div class="vStack" id="vBody">
+          <div class="vStackHead"><span class="l">Clients</span><span class="c" id="vCount">1 of 3</span></div>
+          <!-- Client 1 · YOU auto-added -->
+          <div class="vCard filled" id="vC1">
+            <div class="vAv" id="vC1Av">K</div>
+            <div class="vBody">
+              <div class="vName" id="vC1Name"><span class="nm">You (Sofia Davis)</span><span class="vBadge">Buyer</span></div>
+              <div class="vMeta"><span class="vTag" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block;max-width:100%">sofia@example.com · (555) 012-3456</span></div>
+            </div>
+            <div class="vChk"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></div>
+            <div class="vChev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></div>
+          </div>
+          <!-- Client 2 · waiting active -->
+          <div class="vCard waiting" id="vC2" onclick="voiceNext()">
+            <div class="vAv dash">2</div>
+            <div class="vBody">
+              <div class="vName wait" id="vC2Name">Say a name…</div>
+              <div class="vMeta"><span class="vTag">Client 2 · optional</span></div>
+            </div>
+            <span class="vHint">or type</span>
+          </div>
+          <!-- Client 3 · empty -->
+          <div class="vCard empty" id="vC3" onclick="voiceNext()">
+            <div class="vAv dash">3</div>
+            <div class="vBody">
+              <div class="vName empty" id="vC3Name">One more?</div>
+              <div class="vMeta"><span class="vTag">Client 3 · optional</span></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- mid-flow actions (post-prospect only) -->
+        <div id="vActions" style="padding:0 20px;position:relative;z-index:2"></div>
+
+        <div class="vBar">
+          <button class="vBtn" id="vMicBtn" onclick="vToggleMute()" aria-label="Mic">
+            <svg class="on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg>
+            <svg class="off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><line x1="2" y1="2" x2="22" y2="22"/><path d="M18.89 13.23A7 7 0 0 0 19 12v-2"/><path d="M5 10v2a7 7 0 0 0 12 5"/><path d="M15 9.34V5a3 3 0 0 0-5.68-1.33"/><path d="M9 9v3a3 3 0 0 0 5.12 2.12"/><line x1="12" y1="19" x2="12" y2="22"/></svg>
+          </button>
+          <button class="vProspectPill" id="vProspectPill" onclick="runProspect()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13"/><path d="m22 2-7 20-4-9-9-4 20-7z"/></svg><span id="vProspectPillTxt">Start prospecting</span></button>
+          <button class="vBtn" onclick="alert('Switches to chat, same thread — chat parity comes after this pass.')" aria-label="Switch to chat">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          </button>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- 5 · Mel intro (Figma web parity — 506:36727) -->
+    <div class="screen" id="s-intro">
+      <div class="introBg" aria-hidden="true"><span class="b1"></span><span class="b2"></span><span class="b3"></span><span class="b4"></span></div>
+      <div class="introhero">
+        <div class="intromel" aria-hidden="true">
+          <img src="assets/mel-intro/orb-fill.svg" alt="">
+          <img src="assets/mel-intro/orb-inf.svg" alt="">
+        </div>
+        <div class="eyebrow">Introducing Mel</div>
+        <h1>Your comprehensive AI assistant — beyond client nurturing.</h1>
+        <p class="sub">You've seen Mel nurture your leads. That's just the start. Mel also works for <b>you</b> — handling paperwork, logging contacts, and keeping your pipeline current.</p>
+      </div>
+      <div class="agentswipe" id="agentSwipe" onscroll="updateSwipeDots()">
+        <div class="agent-card a-nurture">
+          <div class="aicon"><img src="assets/mel-intro/ic-nurture.svg" alt=""></div>
+          <div class="ak">Nurture AI Agent</div>
+          <div class="av">No lead left behind.</div>
+          <div class="ad">Follow-ups that book meetings and showings.</div>
+        </div>
+        <div class="agent-card a-crm">
+          <div class="aicon"><img src="assets/mel-intro/ic-crm.svg" alt=""></div>
+          <div class="ak">CRM AI Agent</div>
+          <div class="av">Relationships on autopilot.</div>
+          <div class="ad">Logs conversations, adds leads, flags follow-ups.</div>
+        </div>
+        <div class="agent-card a-marketing">
+          <div class="aicon"><img src="assets/mel-intro/ic-marketing.svg" alt=""></div>
+          <div class="ak">Marketing AI Agent</div>
+          <div class="av">Branded, on-demand assets.</div>
+          <div class="ad">CMAs, reports, and branded content in seconds.</div>
+        </div>
+        <div class="agent-card a-documentation">
+          <div class="aicon"><img src="assets/mel-intro/ic-documentation.svg" alt=""></div>
+          <div class="ak">Documentation AI Agent</div>
+          <div class="av">Contracts handled, on time.</div>
+          <div class="ad">Drafts agreements and sends for e-signature.</div>
+        </div>
+        <div class="agent-card a-support">
+          <div class="aicon"><img src="assets/mel-intro/ic-support.svg" alt=""></div>
+          <div class="ak">Support AI Agent</div>
+          <div class="av">Every answer, instantly.</div>
+          <div class="ad">Instant answers on contracts and compliance.</div>
+        </div>
+      </div>
+      <div class="swipedots" id="swipeDots"><span class="on"></span><span></span><span></span><span></span><span></span></div>
+      <div class="footer"><button class="btn" onclick="go('chat')">Test Drive Mel Now <img src="assets/mel-intro/ic-arrow.svg" alt=""></button></div>
+    </div>
+
+    <!-- 7 · Chat -->
+    <div class="screen" id="s-chat">
+      <button class="vIcoBtn chatClose" onclick="go('home')" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+      <div class="chatscroll" id="chatScroll">
+        <div class="chatEmpty" id="chatEmpty">
+          <div class="chatHero">
+            <div class="mellogo"><img src="assets/mel-intro/orb-fill.svg" alt=""><img src="assets/mel-intro/orb-inf.svg" alt=""></div>
+            <h1>How can I help you today?</h1>
+            <p class="sub">Ask about leads, follow-ups, listings, CMA report</p>
+          </div>
+          <div class="promptswipe" id="promptSwipe">
+            <div class="pcard" onclick="suggest(this)"><svg class="psparkle" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l1.6 5.4L19 9l-5.4 1.6L12 16l-1.6-5.4L5 9l5.4-1.6z"/></svg><span class="sk">Client</span><div class="pcat">Client Management</div><div class="pdiv"></div><div class="sv">Add a note to my client about their budget and timeline preferences</div></div>
+            <div class="pcard" onclick="suggest(this)"><svg class="psparkle" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l1.6 5.4L19 9l-5.4 1.6L12 16l-1.6-5.4L5 9l5.4-1.6z"/></svg><span class="sk">Scheduling</span><div class="pcat">Meeting & Scheduling</div><div class="pdiv"></div><div class="sv">Can you schedule a follow-up call with my client for tomorrow afternoon?</div></div>
+            <div class="pcard" onclick="suggest(this)"><svg class="psparkle" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l1.6 5.4L19 9l-5.4 1.6L12 16l-1.6-5.4L5 9l5.4-1.6z"/></svg><span class="sk">Offers</span><div class="pcat">Offer Management</div><div class="pdiv"></div><div class="sv">Help me start a purchase offer for a client on a specific property</div></div>
+            <div class="pcard" onclick="suggest(this)"><svg class="psparkle" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l1.6 5.4L19 9l-5.4 1.6L12 16l-1.6-5.4L5 9l5.4-1.6z"/></svg><span class="sk">Communication</span><div class="pcat">Client Communication</div><div class="pdiv"></div><div class="sv">Send a personalized text message to my client to check in on their home search</div></div>
+            <div class="pcard" onclick="suggest(this)"><svg class="psparkle" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l1.6 5.4L19 9l-5.4 1.6L12 16l-1.6-5.4L5 9l5.4-1.6z"/></svg><span class="sk">CMA</span><div class="pcat">CMA & Valuation</div><div class="pdiv"></div><div class="sv">Create a detailed valuation report I can email directly to my seller client</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="composer">
+        <input placeholder="Ask Mel anything about your pipeline…" id="chatInp" onkeydown="if(event.key==='Enter')sendChat()">
+        <div class="composerChips" id="composerChips">
+          <button class="chip"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M6 21V7l6-4 6 4v14M9 9h1M9 13h1M9 17h1M14 9h1M14 13h1M14 17h1"/></svg>Property</button>
+          <button class="chip"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M9 13h6M9 17h6"/></svg>Document</button>
+          <button class="chip"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>Image</button>
+        </div>
+        <div class="composerRow">
+          <button class="iconbtn plusbtn" id="plusBtn" onclick="togglePlus()" aria-label="Attach"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
+          <span style="flex:1"></span>
+          <button class="iconbtn dictbtn" aria-label="Dictate"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></button>
+          <button class="mel-voice-pill" onclick="requestVoiceEntry()" aria-label="Talk to Mel"><img src="assets/Logo.svg" alt=""><span>Voice</span></button>
+          <button class="iconbtn primary" onclick="sendChat()" aria-label="Send"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></button>
+        </div>
+      </div>
+      <div class="chatdisclaimer">Mel can make mistakes. Verify important details before sharing with clients.</div>
+    </div>
+
+    <!-- 8 · Home dashboard (Figma node 106:1039) -->
+    <div class="screen" id="s-home">
+      <div class="hm-status">
+        <span class="hm-time">9:41</span>
+        <div class="hm-statusicons"><img src="assets/home/ios-signal.svg" alt=""><img src="assets/home/ios-wifi.svg" alt=""><img src="assets/home/ios-battery.svg" alt=""></div>
+      </div>
+      <div class="hm-header">
+        <div class="hm-badge"><span>K</span><img src="assets/home/active-dot.svg" alt=""></div>
+        <button class="hm-bell" aria-label="Notifications"><img src="assets/home/bell.svg" alt=""></button>
+      </div>
+      <div class="hm-greet"><p>👋 Hello, Krish</p></div>
+
+      <div class="hm-main">
+        <div class="hm-quick">
+          <div class="hm-qcard"><div class="hm-qico"><img src="assets/home/user-plus.svg" alt=""></div><p>Add client</p></div>
+          <div class="hm-qcard"><div class="hm-qico"><img src="assets/home/group.svg" alt=""></div><p>Add transaction</p></div>
+        </div>
+
+        <div class="hm-mel" onclick="requestVoiceEntry()">
+          <div class="hm-mel-txt">
+            <div class="hm-mel-brand"><img src="assets/home/infinity.svg" alt=""><span>Mel</span></div>
+            <h3>Talk to your real estate AI assistant, Mel.</h3>
+            <p>Speak to Mel about your prospect milestones, the market, or anything real estate.</p>
+          </div>
+          <div class="hm-mel-orb"><img src="assets/home/mic.svg" alt=""></div>
+        </div>
+
+        <div class="hm-aicard">
+          <div class="hm-aicard-top">
+            <div class="hm-aicard-tag"><img src="assets/home/sparkles.svg" alt=""><span>AI FEATURE</span></div>
+            <img class="hm-aicard-x" src="assets/home/x.svg" alt="Dismiss">
+          </div>
+          <div>
+            <h3>Ready for a steady stream of opportunities?</h3>
+            <p>Let AI nurture every lead into a meeting using AI Camp...</p>
+          </div>
+          <div class="hm-aicard-btnrow">
+            <button class="hm-learnbtn">Learn more</button>
+            <span class="hm-aicard-count">1/4</span>
+          </div>
+        </div>
+
+        <div class="hm-progress"><span class="on"></span><span></span><span></span><span></span></div>
+
+        <div class="hm-section">
+          <div class="hm-sectlbl"><span class="hm-chip"><img src="assets/home/frame.svg" alt=""></span><span>Suggested Topics for you</span></div>
+          <div class="hm-topics-track">
+            <div class="hm-topic market"><h4>Market</h4><p>What's the average price for a single family home in San Diego?</p></div>
+            <div class="hm-topic help"><h4>Help</h4><p>What can you do?</p></div>
+          </div>
+        </div>
+
+        <div class="hm-section">
+          <div class="hm-topics-row"><div class="hm-sectlbl"><span class="hm-chip"><img src="assets/home/sign.svg" alt=""></span><span>Signing Queue</span></div><span class="hm-viewall">View All</span></div>
+          <div class="hm-queueitem">
+            <p class="addr">1234 Grandview Drive, Los Angeles, CA</p>
+            <div class="hm-qdiv"></div>
+            <div class="hm-queuemeta">
+              <div class="hm-queueperson"><img src="assets/home/avatar.jpg" alt=""><span>Tom Henry</span></div>
+              <div class="hm-queuedate"><img src="assets/home/calendar-unfilled.svg" alt=""><span>01/03/2024</span></div>
+            </div>
+          </div>
+          <div class="hm-queueitem">
+            <p class="addr">1234 Grandview Drive, Los Angeles, CA...</p>
+            <div class="hm-qdiv"></div>
+            <div class="hm-queuemeta">
+              <div class="hm-queueperson"><img src="assets/home/avatar.jpg" alt=""><span>Tom Henry</span></div>
+              <div class="hm-queuedate"><img src="assets/home/calendar-unfilled.svg" alt=""><span>01/03/2024</span></div>
+            </div>
+          </div>
+          <div class="hm-queueitem">
+            <p class="addr">1234 Grandview Drive, Los Angeles, CA...</p>
+            <div class="hm-qdiv"></div>
+            <div class="hm-queuemeta">
+              <div class="hm-queueperson"><img src="assets/home/avatar.jpg" alt=""><span>Tom Henry</span></div>
+              <div class="hm-queuedate"><img src="assets/home/calendar-unfilled.svg" alt=""><span>01/03/2024</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="hm-section">
+          <div class="hm-sectlbl"><span class="hm-chip"><img src="assets/home/frame1.svg" alt=""></span><span>Performance Overview</span></div>
+          <div class="hm-stats">
+            <div class="hm-statrow">
+              <div class="hm-stat green"><b>100</b><span class="lbl1">Gross (YTD)</span><span class="lbl2">Commissions</span></div>
+              <div class="hm-stat blue"><b>12</b><span class="lbl1">Active Listings</span><span class="lbl2"></span></div>
+            </div>
+            <div class="hm-statrow">
+              <div class="hm-stat brown"><b>23</b><span class="lbl1">Pending Transactions</span><span class="lbl2"></span></div>
+              <div class="hm-stat purple"><b>2</b><span class="lbl1">Closed (YTD)</span><span class="lbl2">Transactions</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="hm-section">
+          <div class="hm-topics-row"><div class="hm-sectlbl"><span class="hm-chip"><img src="assets/home/calendar-filled.svg" alt=""></span><span>Appointments</span></div><span class="hm-viewall hidden">View All</span></div>
+          <div class="hm-appt outline">
+            <div class="hm-appt-ico"><img src="assets/home/dd.svg" alt=""></div>
+            <div class="hm-appt-txt"><p class="t1">Property showing</p><p class="t2">10:30 AM, 12/12/2025</p></div>
+            <img class="chev" src="assets/home/chevron-right.svg" alt="">
+          </div>
+          <div class="hm-appt solid">
+            <div class="hm-appt-ico"><img src="assets/home/dd.svg" alt=""></div>
+            <div class="hm-appt-txt"><p class="t1">Meet with agent</p><p class="t2">10:30 AM, 12/12/2025</p></div>
+            <img class="chev" src="assets/home/chevron-right.svg" alt="">
+          </div>
+          <div class="hm-appt solid">
+            <div class="hm-appt-ico"><img src="assets/home/dd.svg" alt=""></div>
+            <div class="hm-appt-txt"><p class="t1">Call</p><p class="t2">10:30 AM, 12/12/2025</p></div>
+            <img class="chev" src="assets/home/chevron-right.svg" alt="">
+          </div>
+        </div>
+      </div>
+
+      <div class="hm-tabbar">
+        <button class="hm-tab on"><img src="assets/home/home.svg" alt=""><span>Home</span></button>
+        <button class="hm-tab"><img src="assets/home/users.svg" alt=""><span>Clients</span></button>
+        <button class="hm-tab"><img src="assets/home/briefcase.svg" alt=""><span>Transactions</span></button>
+        <button class="hm-tab"><img src="assets/home/mail.svg" alt=""><span>Inbox</span></button>
+      </div>
+
+      <button class="hm-fab" onclick="requestVoiceEntry()" aria-label="Talk to Mel"><img class="mel-icon-bg" src="assets/home/mel-icon-v2.svg" alt=""><img class="mic-fg" src="assets/home/mic-fill.svg" alt=""></button>
+    </div>
+
+    <!-- state sheet -->
+    <div class="sheetwrap" id="sheetwrap" onclick="if(event.target===this)closeSheet()">
+      <div class="sheet">
+        <div class="grabber"></div>
+        <div style="font:600 15px var(--font-sans)">Select your primary state</div>
+        <div class="ssearch"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg><input placeholder="Search states…" oninput="filterStates(this.value)"></div>
+        <div class="slist" id="slist"></div>
+      </div>
+    </div>
+
+    <!-- mic permission gate — runs before every voice-mode entry -->
+    <div class="sheetwrap" id="micSheetWrap" onclick="if(event.target===this)closeMicSheet()">
+      <div class="sheet micSheet">
+        <div class="grabber"></div>
+        <div class="micGate" id="micAsk">
+          <div class="micGateIco"><img src="assets/Logo.svg" alt=""></div>
+          <div class="micGateTitle">Let Mel hear you</div>
+          <p class="micGateSub">Mel needs microphone access to talk with you. You'll get an OS permission prompt next — allow it to start voice mode.</p>
+          <button class="btn" onclick="requestMicPermission()" id="micAllowBtn">Allow microphone access</button>
+          <button class="btn ghost" onclick="closeMicSheet();go('chat')">Type instead</button>
+        </div>
+        <div class="micGate hide" id="micDenied">
+          <div class="micGateIco micGateIco--warn"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="1" y1="1" x2="23" y2="23"/><path d="M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6"/><path d="M17 16.95A7 7 0 0 1 5 12v-2m14 0v2a7 7 0 0 1-.11 1.23"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></div>
+          <div class="micGateTitle">Mic access blocked</div>
+          <p class="micGateSub">Enable microphone access for this site in your browser settings to use voice mode. You can still type to Mel in the meantime.</p>
+          <button class="btn" onclick="closeMicSheet();go('chat')">Type instead</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── dev panel · screen 4 only · sits OUTSIDE phone shell ── -->
+<div class="stagedev" aria-label="Screen 4 dev controls">
+  <button class="devfab" id="devFab" aria-label="Open dev controls">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>
+  </button>
+  <div class="devpop" id="devPop" role="dialog" aria-label="Design controls">
+    <div class="devTabs">
+      <div class="devTab on" data-tab="controls">Controls</div>
+      <div class="devTab" data-tab="spec">Interaction Spec</div>
+    </div>
+    <div class="devBody" data-body="controls">
+      <h4>Orb state</h4>
+      <div class="devGrp" id="devStateGrp">
+        <button data-state="idle">Idle</button>
+        <button data-state="listening" class="on">Listening</button>
+        <button data-state="speaking">Mel speaks</button>
+        <button data-state="processing">Processing</button>
+        <button data-state="confirm">Confirm</button>
+        <button data-state="error">Error</button>
+      </div>
+      <p class="devNote"><b>Mute</b> lives on the mic icon — tap mic to toggle. No separate orb state.</p>
+      <div class="devDiv"></div>
+      <h4>Sequence</h4>
+      <div class="devRow2"><button id="devFillC2">Fill client 2</button><button id="devFillC3">Fill client 3</button></div>
+      <div class="devRow2"><button id="devReset">Reset</button><button id="devRun">▶ Run full flow</button></div>
+      <div class="devDiv"></div>
+      <h4>View mode</h4>
+      <div class="devRow2"><button data-mode="voice" class="on devModeBtn">Voice</button><button data-mode="type" class="devModeBtn">Type fallback</button></div>
+      <div class="devDiv"></div>
+      <h4>Captions</h4>
+      <div class="devRow2"><button data-cc="off" class="on devCcBtn">Off</button><button data-cc="on" class="devCcBtn">On</button></div>
+    </div>
+    <div class="devBody hide" data-body="spec">
+      <ul class="devSpec">
+        <li><b>Orb</b>gradient-border ring (indigo → violet → amber). Dark disc inside.</li>
+        <li><b>Speak/listen</b>infinity scales subtly (1 → 1.045 speak, 1 → 1.025 listen). No halo. No bars.</li>
+        <li><b>Background</b>dark base, 3 quiet radial spotlights (violet top, indigo bottom-left, warm bottom-right).</li>
+        <li><b>Auto-add</b>agent = client 1 · prospecting · lands on enter.</li>
+        <li><b>Voice loop</b>Mel asks → user speaks → <code>listening</code> → <code>processing</code> → card materializes → <code>confirm</code> → next.</li>
+        <li><b>Top</b>CC circle left, X circle right.</li>
+        <li><b>Bottom</b>mic + chat + chevron-down spread across width. Mic toggles mute (red X-out).</li>
+        <li><b>Captions</b>off by default. Tap CC — glass strip above cards, 2 lines, older fades.</li>
+        <li><b>Waiting card</b>subtle indigo border/text (#B6B8FF) pulses when active slot.</li>
+        <li><b>Design intent</b>voice is primary, text is peer not fallback. Escape hatches at every state.</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ── theme: follows system, manual override for review ── */
+const mq=matchMedia('(prefers-color-scheme: dark)');
+let mode='auto';
+function applyTheme(){document.body.classList.toggle('dark',mode==='dark'||(mode==='auto'&&mq.matches));}
+mq.addEventListener('change',applyTheme);
+function toggleTheme(){mode=mode==='auto'?'light':mode==='light'?'dark':'auto';document.querySelector('.themebtn').textContent='Theme: '+mode;applyTheme();}
+applyTheme();
+
+const $=id=>document.getElementById(id);
+const stepNum={details:1,otp:2,connect:3,voice:4,intro:5,chat:6};
+function toggleHomeChrome(s){const on=s==='home';const sb=document.querySelector('.statusbar');if(sb)sb.style.display=on?'none':'';const ph=$('phone');if(ph)ph.classList.toggle('homeMode',on);}
+function safeLucide(){try{if(window.lucide&&window.lucide.createIcons)window.lucide.createIcons();}catch(e){}}
+function updateSwipeDots(){const r=$('agentSwipe');if(!r)return;const dots=$('swipeDots').children;const cw=r.firstElementChild.offsetWidth+12;const i=Math.round(r.scrollLeft/cw);for(let k=0;k<dots.length;k++)dots[k].classList.toggle('on',k===Math.min(i,dots.length-1));}
+/* enable mouse drag for desktop preview — touch already works natively on mobile */
+(function initSwipeDrag(){function attach(id,onEnd){const r=document.getElementById(id);if(!r){setTimeout(()=>attach(id,onEnd),120);return;}let down=false,startX=0,startL=0,moved=0;r.addEventListener('mousedown',e=>{down=true;moved=0;startX=e.pageX;startL=r.scrollLeft;r.style.scrollSnapType='none';});window.addEventListener('mousemove',e=>{if(!down)return;const dx=e.pageX-startX;moved=Math.abs(dx);r.scrollLeft=startL-dx;});window.addEventListener('mouseup',()=>{if(!down)return;down=false;r.style.scrollSnapType='x mandatory';if(onEnd)setTimeout(onEnd,80);});r.addEventListener('click',e=>{if(moved>6){e.preventDefault();e.stopPropagation();}},true);}attach('agentSwipe',updateSwipeDots);attach('promptSwipe');})();
+function toggleDevPanel(s){const d=document.querySelector('.stagedev');if(!d)return;const on=s==='voice';d.classList.toggle('active',on);if(!on){const p=document.getElementById('devPop'),f=document.getElementById('devFab');if(p)p.classList.remove('open');if(f)f.classList.remove('open');}}
+function paintYouCard(){
+  const c=document.getElementById('vC1');if(!c)return;
+  const fn=($('fName')||{}).value||'Sofia Davis';
+  const em=($('fEmail')||{}).value||'sofia@example.com';
+  const ph=($('fPhone')||{}).value||'(555) 012-3456';
+  /* rebuild the whole vBody — skeleton may have wiped its children */
+  const body=c.querySelector('.vBody');
+  body.innerHTML='<div class="vName" id="vC1Name"><span class="nm">You ('+fn+')</span><span class="vBadge">Buyer</span></div>'
+    +'<div class="vMeta"><span class="vTag" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block;max-width:100%">'+em+' · '+ph+'</span></div>';
+  document.getElementById('vC1Av').textContent=(fn.trim().charAt(0)||'Y').toUpperCase();
+}
+function go(s){document.querySelectorAll('.screen').forEach(e=>e.classList.remove('on'));$('s-'+s).classList.add('on');$('stepdot').textContent=(stepNum[s]||'')+' / 6';document.querySelectorAll('.npill').forEach(p=>p.classList.toggle('on',p.dataset.scr===s));toggleDevPanel(s);toggleHomeChrome(s);if(s==='otp')sendOtpNotif();if(s==='voice')startVoice();safeLucide();}
+/* dev nav — jump without running screen setup (skips OTP send, voice autoplay) */
+function jumpTo(s){document.querySelectorAll('.screen').forEach(e=>e.classList.remove('on'));$('s-'+s).classList.add('on');$('stepdot').textContent=(stepNum[s]||'')+' / 6';document.querySelectorAll('.npill').forEach(p=>p.classList.toggle('on',p.dataset.scr===s));toggleDevPanel(s);toggleHomeChrome(s);if(s==='voice')startVoice();$('notif').classList.remove('on');safeLucide();}
+function pickRole(w){$('roleA').classList.toggle('sel',w==='A');$('roleB').classList.toggle('sel',w==='B');}
+
+/* states */
+const LIVE=["Texas","California","New York","Georgia"];
+const OTHER=["Alabama","Arizona","Colorado","Florida","Illinois","Massachusetts","Nevada","North Carolina","Ohio","Oregon","Pennsylvania","Tennessee","Virginia","Washington"];
+const check='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#5A5FF2" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
+let pickedState='';
+function renderStates(f=''){
+  const q=f.toLowerCase();
+  const row=(n,t)=>`<div class="srow" onclick="pickState('${n}','${t}')"><span>${n}</span>${n===pickedState?check:''}</div>`;
+  const live=LIVE.filter(n=>n.toLowerCase().includes(q)).map(n=>row(n,'live')).join('');
+  const other=OTHER.filter(n=>n.toLowerCase().includes(q)).map(n=>row(n,'other')).join('');
+  $('slist').innerHTML=
+    (live?`<div class="shead"><span class="badge green">Available states</span></div>${live}`:'')+
+    (live&&other?'<div class="sdiv"></div>':'')+
+    (other?`<div class="shead"><span class="badge blue">Upcoming states</span></div>${other}`:'')||
+    '<div class="shead" style="color:var(--muted-foreground)">No states match.</div>';}
+function filterStates(v){renderStates(v);}
+function openSheet(){$('sheetwrap').classList.add('on');renderStates();}
+function closeSheet(){$('sheetwrap').classList.remove('on');}
+
+/* mic permission gate — first-time onboarding users won't have granted mic yet */
+let micPermState='unknown'; /* unknown | granted | denied */
+function requestVoiceEntry(){
+  if(micPermState==='granted'){go('voice');return;}
+  $('micAsk').classList.remove('hide');$('micDenied').classList.add('hide');
+  $('micAllowBtn').disabled=false;$('micAllowBtn').textContent='Allow microphone access';
+  $('micSheetWrap').classList.add('on');
+}
+function closeMicSheet(){$('micSheetWrap').classList.remove('on');}
+function requestMicPermission(){
+  $('micAllowBtn').disabled=true;$('micAllowBtn').textContent='Requesting…';
+  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){micPermState='granted';closeMicSheet();go('voice');return;}
+  navigator.mediaDevices.getUserMedia({audio:true}).then(stream=>{
+    stream.getTracks().forEach(t=>t.stop());
+    micPermState='granted';closeMicSheet();go('voice');
+  }).catch(()=>{
+    micPermState='denied';
+    $('micAsk').classList.add('hide');$('micDenied').classList.remove('hide');
+  });
+}
+function pickState(n,t){pickedState=n;$('stateVal').textContent=n;$('stateBtn').classList.add('filled');closeSheet();
+  $('waitnote').innerHTML=t==='other'?`<span class="badge blue">MLS pending</span>&nbsp; We'll set up ${n} manually within 1 business day. Everything else works now.`:'';
+  $('waitnote').classList.toggle('on',t==='other');$('stateNext').disabled=false;}
+
+/* otp */
+const CODE='428913';
+let resendT=null,resendLeft=30,autoVerifyT=null,verifying=false;
+let notifT=null;
+function sendOtpNotif(){
+  $('otpPhone').textContent=$('fPhone').value||'(555) 012-3456';
+  otpType('');startResendTimer();
+  $('notif').classList.remove('on');clearTimeout(notifT);
+  notifT=setTimeout(()=>showNotif('Messages','Your Radius code is 428913.',true),600);
+  setTimeout(()=>$('otpInput').focus(),300);
+}
+function showNotif(from,body,opts){
+  opts=(typeof opts==='object'&&opts)?opts:(opts===true?{sticky:true}:{});
+  const type=opts.type||'sms';
+  const ico=type==='email'
+    ?'<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>'
+    :'<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>';
+  document.querySelector('#notif .nfrom').innerHTML=ico+'<span id="notifFrom">'+from+'</span>';
+  $('notifBody').textContent=body;
+  $('notif').classList.add('on');
+  safeLucide();
+  if(!opts.sticky)setTimeout(()=>$('notif').classList.remove('on'),opts.duration||3600);
+}
+function notifTap(){if($('s-otp').classList.contains('on')){$('otpInput').value=CODE;otpType(CODE);}$('notif').classList.remove('on');}
+function otpFocus(){$('otpInput').focus();}
+function otpType(v){
+  if(verifying)return;
+  v=v.replace(/\D/g,'').slice(0,6);$('otpInput').value=v;
+  const boxes=document.querySelectorAll('.otpbox');
+  boxes.forEach((b,i)=>{b.textContent=v[i]||'';b.classList.remove('err','active');});
+  const nextIdx=Math.min(v.length,5);
+  if(document.activeElement===$('otpInput'))boxes[nextIdx]&&boxes[nextIdx].classList.add('active');
+  $('otpErr').classList.remove('on');
+  $('otpBtn').disabled=v.length!==6;
+  if(v.length>0)$('notif').classList.remove('on');
+  clearTimeout(autoVerifyT);
+  if(v.length===6)autoVerifyT=setTimeout(otpVerify,280);
+}
+function otpVerify(){
+  if(verifying)return;
+  const v=$('otpInput').value;
+  if(v===CODE){
+    verifying=true;$('otpBtn').innerHTML='<span class="otpspin"></span>&nbsp;Verifying…';$('otpBtn').disabled=true;
+    setTimeout(()=>{verifying=false;$('otpBtn').textContent='Verify';go('connect');},520);
+  }else{
+    document.querySelectorAll('.otpbox').forEach(b=>b.classList.add('err'));
+    $('otpErr').classList.add('on');$('otpRow').classList.add('shake');
+    setTimeout(()=>{$('otpRow').classList.remove('shake');otpType('');otpFocus();},600);
+  }
+}
+function startResendTimer(){
+  clearInterval(resendT);resendLeft=30;
+  const btn=$('resendBtn');btn.disabled=true;btn.textContent='Resend in '+resendLeft+'s';
+  resendT=setInterval(()=>{
+    resendLeft--;
+    if(resendLeft<=0){clearInterval(resendT);btn.disabled=false;btn.textContent='Resend code';}
+    else btn.textContent='Resend in '+resendLeft+'s';
+  },1000);
+}
+function resendOtp(){
+  otpType('');startResendTimer();
+  const t=$('otpToast');t.classList.add('on');setTimeout(()=>t.classList.remove('on'),1600);
+  setTimeout(()=>showNotif('Messages','Your Radius code is 428913.',true),500);
+  otpFocus();
+}
+
+/* screen 3 · Gmail — first tap = cancel, second tap = success → collapse card + reveal number section */
+let gmailTries=0;
+function gmailConnect(){
+  if($('gmBtn').disabled)return;
+  gmailTries++;
+  $('gmBtn').disabled=true;
+  $('gmBtnLbl').innerHTML='<span class="spin"></span>&nbsp;Connecting…';
+  $('gmErr').classList.remove('on');
+  setTimeout(()=>{
+    if(gmailTries===1){
+      /* simulated cancel */
+      $('gmBtn').disabled=false;
+      $('gmBtnLbl').textContent='Try again';
+      $('gmErr').classList.add('on');
+    }else{
+      /* success — collapse glass card, reveal connected row + number section, auto-scroll */
+      $('gmailCard').style.display='none';
+      $('gmConnected').classList.add('on');
+      $('numsec').classList.add('on');
+      setTimeout(()=>{
+        const sc=$('s-connect'),tgt=$('numsec');
+        sc.scrollTo({top:tgt.offsetTop-20,behavior:'smooth'});
+        setTimeout(()=>$('area').focus({preventScroll:true}),420);
+      },320);
+    }
+  },1100);
+}
+function gmailReset(){
+  gmailTries=1; /* next tap goes straight to success */
+  $('gmailCard').style.display='block';
+  $('gmConnected').classList.remove('on');
+  $('numsec').classList.remove('on');
+  $('gmBtnLbl').textContent='Continue with Google';
+  $('gmBtn').disabled=false;
+  $('gmErr').classList.remove('on');
+  $('claimBtn').disabled=true;
+  $('claimFooter').classList.add('hide');
+  $('s-connect').scrollTo({top:0,behavior:'smooth'});
+}
+function onAreaInput(v){
+  v=v.replace(/\D/g,'').slice(0,3);
+  $('area').value=v;
+  $('claimBtn').disabled=true;
+  $('claimFooter').classList.add('hide');
+  $('areaErr').classList.remove('on');
+  if(v.length<3)$('numlist').innerHTML='';
+}
+const PHONE_SVG='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>';
+const TINTS=['tGreen','tBlue','tPurple'];
+function genNumbers(){
+  const a=$('area').value.trim();
+  if(!/^\d{3}$/.test(a)){$('areaErr').classList.add('on');return;}
+  $('areaErr').classList.remove('on');
+  $('claimBtn').disabled=true;
+  $('claimFooter').classList.add('hide');
+  $('numlist').innerHTML='<p class="capsub" style="margin:12px 0 0"><span class="spin"></span>&nbsp;Finding numbers in '+a+'…</p>';
+  setTimeout(()=>{
+    const nums=[`(${a}) 214-0186`,`(${a}) 337-4092`,`(${a}) 580-2741`];
+    $('numlist').innerHTML=nums.map((n,i)=>`<div class="numcard" onclick="pickNum(this)"><div class="numicon ${TINTS[i]}">${PHONE_SVG}</div><div class="numtxt">${n}</div></div>`).join('');
+  },800);
+}
+let myNumber='';
+function pickNum(el){document.querySelectorAll('.numcard').forEach(c=>c.classList.remove('sel'));el.classList.add('sel');myNumber=el.textContent;$('claimBtn').disabled=false;$('claimFooter').classList.remove('hide');}
+function claimNumber(){requestVoiceEntry();}
+
+/* voice flow — add clients (screen 4)
+   Client 1 = YOU auto-added (agent · prospecting). Slots 2 + 3 optional.
+   User taps mic (or slot) → simulates voice capture → orb states cycle. */
+let vStep=0,clients=[],vCC=false,vMuted=false,vBusy=false;
+const firstName=()=>($('fName').value||'Sofia Davis').split(' ')[0];
+const CLIENTS_DEMO=[
+  {av:'SC',name:'Sarah Chen',email:'sarah@example.com',phone:'(512) 555-4102',type:'Buyer',tag:'Buyer · downtown'},
+  {av:'MR',name:'Marco Ruiz',email:'marco@example.com',phone:'(512) 555-2287',type:'Seller',tag:'Seller · Bay Area'},
+];
+function say(t,sub){$('vCap').innerHTML=t;$('vSub').textContent=sub||'';}
+function vSetState(s){$('vRoot').dataset.vstate=s;$('vOrb').dataset.vstate=s;}
+function vCount(){return 1+(clients.length);}
+function vRefreshCount(){$('vCount').textContent=vCount()+' of 3';}
+
+function startVoice(){
+  vStep=0;clients=[];vMuted=false;vCC=false;
+  $('vRoot').dataset.cc='off';$('vCcBtn').classList.remove('on');
+  $('vMicBtn').classList.remove('muted');
+  vResetSlot(2);vResetSlot(3);vRefreshCount();
+  /* reset CTA state */
+  const pill=$('vProspectPill');pill.disabled=false;pill.onclick=runProspect;
+  $('vProspectPillTxt').textContent='Start prospecting';
+  pill.classList.remove('on');
+  $('vActions').innerHTML='';
+
+  /* Card 1 skeleton first — Mel is adding YOU as a demo client */
+  const c1=$('vC1');
+  const oldBody=c1.querySelector('.vBody').innerHTML;
+  c1.querySelector('.vBody').innerHTML='<div class="vSkel"><span></span><span></span><span></span></div>';
+  vSetState('processing');say('<span class="spMel">Mel</span>: Adding you as a demo client…','one moment');
+  setTimeout(()=>{
+    paintYouCard();
+    vSetState('confirm');say('<span class="spMel">Mel</span>: You\'re added','Test message + email ready');
+    /* CTA appears now */
+    pill.classList.add('on');
+    setTimeout(()=>{
+      say('Say a name…','or tap Start prospecting');
+      vSetState('listening');vStep=1;
+      bindStateClick();
+    },1400);
+  },1200);
+}
+
+const wait=ms=>new Promise(r=>setTimeout(r,ms));
+const DOTS='<span class="vDots"><span></span><span></span><span></span></span>';
+function melLine(q){return '<span class="spMel">Mel</span>: '+q;}
+function youLine(a){return '<span class="spYou">You</span>: '+a+DOTS;}
+function buildMetaLine(meta){
+  /* type moved to badge next to name — meta = email · phone only */
+  const parts=[meta.email,meta.phone].filter(Boolean);
+  return '<span class="vTag" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block;max-width:100%">'+parts.join(' · ')+'</span>';
+}
+function buildNameHTML(name,type){
+  return '<span class="nm">'+name+'</span>'+(type?'<span class="vBadge">'+type+'</span>':'');
+}
+function showCardSkel(n){
+  const body=$('vC'+n).querySelector('.vBody');
+  body.innerHTML='<div class="vSkel"><span></span><span></span><span></span></div>';
+}
+function rebuildVBody(n,name,metaObj,type){
+  const body=$('vC'+n).querySelector('.vBody');
+  const nm=name||'Client '+n;
+  body.innerHTML='<div class="vName" id="vC'+n+'Name">'+buildNameHTML(nm,type)+'</div><div class="vMeta">'+buildMetaLine(metaObj||{})+'</div>';
+}
+async function runCascade(n,data){
+  vBusy=true;unbindStateClick();
+  const card=$('vC'+n);
+  card.classList.remove('waiting','empty');card.classList.add('filled');
+  card.onclick=null;
+  const av=card.querySelector('.vAv');av.classList.remove('dash');
+  const hint=card.querySelector('.vHint');if(hint)hint.remove();
+  const steps=[
+    {q:"What's their name?",       a:data.name,  key:'name'},
+    {q:"And their email?",         a:data.email, key:'email'},
+    {q:"Phone number?",            a:data.phone, key:'phone'},
+    {q:"Buyer or seller?",         a:data.type,  key:'type'}
+  ];
+  const meta={};
+  for(let i=0;i<steps.length;i++){
+    const s=steps[i];
+    /* 1 · Mel asks */
+    vSetState('speaking');say(melLine(s.q),'Mel is asking');
+    await wait(1000);
+    /* 2 · You respond */
+    vSetState('listening');say(youLine(s.a),'listening…');
+    await wait(1100);
+    /* 3 · Mel processing (skeleton on first fill only) */
+    vSetState('processing');say('Adding to your list…','');
+    if(i===0)showCardSkel(n);
+    await wait(1000);
+    /* 4 · commit to card */
+    if(s.key==='name'){av.textContent=data.av;rebuildVBody(n,data.name,{},null);}
+    else if(s.key==='type'){meta.type=s.a;rebuildVBody(n,data.name,meta,s.a);}
+    else{meta[s.key]=s.a;rebuildVBody(n,data.name,meta,null);}
+    /* 5 · Mel confirms tiny beat */
+    vSetState('confirm');say('<span class="spMel">Mel</span>: Got it','');
+    await wait(600);
+  }
+  /* final confirm + check chip */
+  if(!card.querySelector('.vChk')){const chk=document.createElement('div');chk.className='vChk';chk.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>';card.appendChild(chk);}
+  vSetState('confirm');say('Added '+data.name,'Client '+n+' · '+data.type);
+  vBusy=false;
+}
+
+function offerProspect(){
+  vSetState('speaking');say('<span class="spMel">Mel</span>: Ready to prospect?','Tap Start prospecting');
+  /* pill already visible from startVoice — just ensure enabled */
+  const pill=$('vProspectPill');pill.disabled=false;pill.classList.add('on');
+}
+function voiceNext(){
+  if(vMuted){vToggleMute();return;}
+  if(vBusy)return;
+  if(vStep===1){
+    runCascade(2,CLIENTS_DEMO[0]).then(()=>{
+      clients.push(CLIENTS_DEMO[0].name);vRefreshCount();vStep=2;
+      /* upgrade card 3 to waiting so user can add another (or skip via prospect CTA) */
+      const c3=$('vC3');c3.classList.remove('empty');c3.classList.add('waiting');
+      c3.querySelector('.vName').classList.remove('empty');c3.querySelector('.vName').classList.add('wait');
+      c3.querySelector('.vName').textContent='Say a name…';
+      if(!c3.querySelector('.vHint')){const h=document.createElement('span');h.className='vHint';h.textContent='or type';c3.appendChild(h);}
+      c3.onclick=voiceNext;
+      setTimeout(offerProspect,900);
+    });return;}
+  if(vStep===2){
+    runCascade(3,CLIENTS_DEMO[1]).then(()=>{
+      clients.push(CLIENTS_DEMO[1].name);vRefreshCount();vStep=3;
+      setTimeout(offerProspect,900);
+    });return;}
+}
+
+async function runProspect(){
+  if(vBusy)return;vBusy=true;
+  const pill=$('vProspectPill');pill.disabled=true;
+  vSetState('speaking');say('<span class="spMel">Mel</span>: Reaching out now…','');
+  await wait(700);
+  /* targets: YOU + all cascade-added clients (based on vStep) */
+  const em=($('fEmail')||{}).value||'sofia@example.com';
+  const ph=($('fPhone')||{}).value||'(555) 012-3456';
+  const fn=(($('fName')||{}).value||'Sofia').split(' ')[0];
+  const targets=[{n:1,name:fn,phone:ph,email:em,role:'agent'}];
+  if(vStep>=2)targets.push({n:2,name:CLIENTS_DEMO[0].name.split(' ')[0],phone:CLIENTS_DEMO[0].phone,email:CLIENTS_DEMO[0].email,role:'client'});
+  if(vStep>=3)targets.push({n:3,name:CLIENTS_DEMO[1].name.split(' ')[0],phone:CLIENTS_DEMO[1].phone,email:CLIENTS_DEMO[1].email,role:'client'});
+
+  for(const t of targets){
+    const card=$('vC'+t.n);
+    injectExpand(card,t);
+    void card.offsetHeight;
+    card.classList.add('expanded');
+    await wait(600);
+    await revealTrace(card,t);
+    vSetState('confirm');say('<span class="spMel">Mel</span>: Sent to '+t.name,'text + email · done');
+    /* two realistic notifs — SMS first, then Email (like actual iOS drops) */
+    showNotif('Messages · Mel',copyFor('sms','portal',t),{type:'sms',duration:3000});
+    await wait(1400);
+    showNotif('Mail · Mel',copyFor('email','portal',t).replace(/^Subject:\s*/,''),{type:'email',duration:3000});
+    await wait(1600);
+    card.classList.remove('expanded');
+    await wait(700);
+    /* keep the injected expand DOM so user can re-open manually */
+    const ex=card.querySelector('.vExpand');if(ex){
+      /* pre-mark all rows sent so re-open shows content instantly */
+      ex.querySelectorAll('.vSend').forEach(r=>r.classList.add('sent'));
+    }
+    card.dataset.prospected='true';
+    card.onclick=()=>toggleProspectedCard(card);
+    await wait(220);
+  }
+  vSetState('confirm');say('<span class="spMel">Mel</span>: All sent — nice work','Everyone got a text + email');
+  /* transform pill into final CTA */
+  $('vProspectPillTxt').textContent="Loved it — let's keep going";
+  pill.disabled=false;
+  pill.onclick=()=>go('intro');
+  vBusy=false;
+}
+/* copy templates per channel */
+function copyFor(chan,sec,t){
+  const slug=t.name.toLowerCase().replace(/[^a-z]/g,'')+'-'+(t.name[0]||'x').toLowerCase();
+  const portalUrl='portal.radius.app/hartwell/'+slug;
+  if(sec==='portal'){
+    return chan==='sms'
+      ? 'Hi '+t.name+", it's Mel — portal: "+portalUrl
+      : "Subject: Your home search starts here, "+t.name;
+  }
+  return chan==='sms'
+    ? 'Hi '+t.name+"! Can you help me understand your top priorities?"
+    : "Subject: Let's find your next home";
+}
+function destFor(chan,t){return chan==='sms'?t.phone:t.email;}
+function injectExpand(card,t){
+  const ICO_LINK='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>';
+  const ICO_CHAT='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>';
+  const ICO_SMS='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>';
+  const ICO_EMAIL='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>';
+  const html=
+    '<div class="vExpand">'+
+      '<div class="vExpDiv"></div>'+
+      '<div class="vChanRow">'+
+        '<button class="vChanPill on" data-chan="sms" onclick="vSwitchChan(this,\''+card.id+'\',\'sms\')">'+ICO_SMS+'Text</button>'+
+        '<button class="vChanPill" data-chan="email" onclick="vSwitchChan(this,\''+card.id+'\',\'email\')">'+ICO_EMAIL+'Email</button>'+
+      '</div>'+
+      '<div class="vSect" data-sec="portal">'+
+        '<div class="vSectH"><span class="vSectIco">'+ICO_LINK+'</span><span class="vSectT">Client portal link</span></div>'+
+        '<div class="vSend" data-row="portal"><span class="vSendBody"><span class="thinking">Sending to <b style="color:var(--foreground);font-weight:600">'+t.phone+'</b><span class="vDots"><span></span><span></span><span></span></span></span><span class="content"><em>'+copyFor('sms','portal',t)+'</em></span></span></div>'+
+      '</div>'+
+      '<div class="vSect" data-sec="convo">'+
+        '<div class="vSectH"><span class="vSectIco">'+ICO_CHAT+'</span><span class="vSectT">Mel started the conversation</span></div>'+
+        '<div class="vSend" data-row="convo"><span class="vSendBody"><span class="thinking">Sending to <b style="color:var(--foreground);font-weight:600">'+t.phone+'</b><span class="vDots"><span></span><span></span><span></span></span></span><span class="content"><em>'+copyFor('sms','convo',t)+'</em></span></span></div>'+
+      '</div>'+
+    '</div>';
+  card.insertAdjacentHTML('beforeend',html);
+  card.dataset.chan='sms';
+  card._target=t;
+}
+function vSwitchChan(btn,cardId,chan){
+  const card=document.getElementById(cardId);if(!card||!card._target)return;
+  card.dataset.chan=chan;
+  card.querySelectorAll('.vChanPill').forEach(p=>p.classList.toggle('on',p.dataset.chan===chan));
+  const t=card._target;
+  card.querySelectorAll('.vSend').forEach(r=>{
+    const sec=r.dataset.row;
+    r.querySelector('.content em').textContent=copyFor(chan,sec,t);
+    r.querySelector('.thinking b').textContent=destFor(chan,t);
+  });
+}
+async function revealTrace(card,t){
+  /* phase 1: SMS channel — reveal both rows */
+  const rows=card.querySelectorAll('.vSend');
+  for(const r of rows){
+    const sec=r.dataset.row;
+    say('<span class="spMel">Mel</span>: Sending '+(sec==='portal'?'portal link':'first message')+' via SMS','to '+t.phone);
+    await wait(750);
+    r.classList.add('sent');
+    await wait(220);
+  }
+  /* phase 2: auto-switch to Email pill, reveal both rows */
+  await wait(600);
+  const emailPill=card.querySelector('.vChanPill[data-chan="email"]');
+  vSwitchChan(emailPill,card.id,'email');
+  /* re-hide sent state so trace re-runs for email */
+  card.querySelectorAll('.vSend').forEach(r=>r.classList.remove('sent'));
+  await wait(300);
+  for(const r of card.querySelectorAll('.vSend')){
+    const sec=r.dataset.row;
+    say('<span class="spMel">Mel</span>: Sending '+(sec==='portal'?'portal link':'first message')+' via email','to '+t.email);
+    await wait(750);
+    r.classList.add('sent');
+    await wait(220);
+  }
+}
+
+/* one-shot fill for dev panel — skips cascade */
+function vFillSlot(n,data){
+  const card=$('vC'+n);card.classList.remove('waiting','empty');card.classList.add('filled');
+  card.onclick=null;
+  const av=card.querySelector('.vAv');av.classList.remove('dash');av.textContent=data.av;
+  const hint=card.querySelector('.vHint');if(hint)hint.remove();
+  rebuildVBody(n,data.name,{email:data.email,phone:data.phone},data.type);
+  if(!card.querySelector('.vChk')){const chk=document.createElement('div');chk.className='vChk';chk.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>';card.appendChild(chk);}
+}
+function bindStateClick(){const el=$('vCap');if(!el)return;el.classList.add('clickable');el.onclick=voiceNext;$('vSub').style.cursor='pointer';$('vSub').onclick=voiceNext;}
+function unbindStateClick(){const el=$('vCap');if(!el)return;el.classList.remove('clickable');el.onclick=null;$('vSub').style.cursor='';$('vSub').onclick=null;}
+function toggleProspectedCard(card){
+  if(card.classList.contains('expanded')){card.classList.remove('expanded');}
+  else{card.classList.add('expanded');}
+}
+function vResetSlot(n){
+  const card=$('vC'+n);
+  card.className='vCard '+(n===2?'waiting':'empty');
+  card.onclick=voiceNext;
+  const av=card.querySelector('.vAv');av.className='vAv dash';av.textContent=String(n);
+  const nameEl=$('vC'+n+'Name');nameEl.textContent=n===2?'Say a name…':'One more?';
+  nameEl.className='vName '+(n===2?'wait':'empty');
+  card.querySelector('.vMeta').innerHTML='<span class="vTag">Client '+n+' · optional</span>';
+  const chk=card.querySelector('.vChk');if(chk)chk.remove();
+  if(n===2&&!card.querySelector('.vHint')){const h=document.createElement('span');h.className='vHint';h.textContent='or type';card.appendChild(h);}
+}
+
+function vToggleCC(){vCC=!vCC;$('vRoot').dataset.cc=vCC?'on':'off';$('vCcBtn').classList.toggle('on',vCC);}
+function vToggleMute(){vMuted=!vMuted;$('vMicBtn').classList.toggle('muted',vMuted);
+  if(vMuted){vSetState('idle');say('Mic muted','tap mic to resume');}
+  else{vSetState('listening');say('Say a name…',vStep===2?'Client 3 · optional':'Client 2 · optional');}}
+function vCycleState(){const seq=['listening','speaking','processing','confirm','error','idle'];const cur=$('vOrb').dataset.vstate;vSetState(seq[(seq.indexOf(cur)+1)%seq.length]);}
+function skipClients(){go('intro');}
+function prospect(){
+  vStep=4;say('On it. Reaching out to Sarah now…','Prospecting');
+  $('vActions').innerHTML='';
+  $('vBody').innerHTML=`<div class="sendline"><span class="spin"></span>Sending text from ${myNumber||'your number'}…</div>`;
+  setTimeout(()=>{
+    $('vBody').innerHTML=`<div class="card receipt"><div class="ricon"><i data-lucide="check"></i></div><div><div class="rw">Text sent · Sarah Johnson</div><div class="rs2">"Hi Sarah, this is Mel with the ${firstName()} team. Still thinking about your home search?"</div></div></div>`;
+    safeLucide();
+    setTimeout(()=>{
+      $('vBody').innerHTML+=`<div class="card receipt"><div class="ricon"><i data-lucide="check"></i></div><div><div class="rw">Email sent · warm intro</div><div class="rs2">Replies route straight back to Mel, in Radius.</div></div></div>`;
+      safeLucide();
+      showNotif('Mail · sarah@example.com','Re: Let\'s find your next home — "Sounds great, send me listings!"');
+      setTimeout(()=>{
+        say('Sarah just heard from you — and replied. Want to add one more client, or keep going?');
+        $('vActions').innerHTML=`<div class="rowbtns"><button class="btn outline" onclick="startVoice()">Add another</button><button class="btn" onclick="go('intro')">Keep going</button></div>`;
+      },1600);
+    },1100);
+  },1200);
+}
+
+/* chat */
+function suggest(el){addBub(el.querySelector('.sv').textContent,'me');setTimeout(()=>addBub('On it — pulling that up now.'),600);el.remove();}
+function togglePlus(){$('composerChips').classList.toggle('open');$('plusBtn').classList.toggle('on');}
+function sendChat(){const v=$('chatInp').value.trim();if(!v)return;$('chatInp').value='';addBub(v,'me');setTimeout(()=>addBub('On it — pulling that up now.'),600);}
+function addBub(t,me){const d=document.createElement('div');d.className='bub'+(me?' me':'');d.textContent=t;$('chatScroll').appendChild(d);$('chatScroll').scrollTop=1e9;}
+
+safeLucide();
+
+/* ── dev panel wiring — screen 4 only ── */
+(function initDevPanel(){
+  const wrap=document.querySelector('.stagedev');if(!wrap)return;
+  const fab=wrap.querySelector('.devfab'),pop=wrap.querySelector('.devpop');
+  fab.addEventListener('click',e=>{e.stopPropagation();const o=pop.classList.toggle('open');fab.classList.toggle('open',o);});
+  document.addEventListener('click',e=>{if(!pop.contains(e.target)&&!fab.contains(e.target)){pop.classList.remove('open');fab.classList.remove('open');}});
+  wrap.querySelectorAll('.devTab').forEach(t=>t.addEventListener('click',()=>{
+    wrap.querySelectorAll('.devTab').forEach(x=>x.classList.remove('on'));t.classList.add('on');
+    wrap.querySelectorAll('.devBody').forEach(b=>b.classList.toggle('hide',b.dataset.body!==t.dataset.tab));
+  }));
+  /* orb state pills */
+  const stateGrp=wrap.querySelector('#devStateGrp');
+  stateGrp.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
+    vSetState(b.dataset.state);
+    [...stateGrp.children].forEach(x=>x.classList.toggle('on',x.dataset.state===b.dataset.state));
+  });
+  /* sequence */
+  wrap.querySelector('#devFillC2').addEventListener('click',()=>{
+    if(typeof CLIENTS_DEMO==='undefined')return;
+    vFillSlot(2,CLIENTS_DEMO[0]);clients.push(CLIENTS_DEMO[0].name);vRefreshCount();vStep=2;
+  });
+  wrap.querySelector('#devFillC3').addEventListener('click',()=>{
+    if(typeof CLIENTS_DEMO==='undefined')return;
+    vFillSlot(3,CLIENTS_DEMO[1]);clients.push(CLIENTS_DEMO[1].name);vRefreshCount();vStep=3;
+  });
+  wrap.querySelector('#devReset').addEventListener('click',()=>{startVoice();syncDevState('listening');});
+  wrap.querySelector('#devRun').addEventListener('click',()=>{startVoice();setTimeout(voiceNext,600);setTimeout(voiceNext,4800);});
+  /* mode */
+  wrap.querySelectorAll('.devModeBtn').forEach(b=>b.addEventListener('click',()=>{
+    wrap.querySelectorAll('.devModeBtn').forEach(x=>x.classList.remove('on'));b.classList.add('on');
+    if(b.dataset.mode==='type')alert('Type fallback — stub. Wire chat handoff in screen 6 build.');
+  }));
+  /* captions */
+  wrap.querySelectorAll('.devCcBtn').forEach(b=>b.addEventListener('click',()=>{
+    wrap.querySelectorAll('.devCcBtn').forEach(x=>x.classList.remove('on'));b.classList.add('on');
+    const on=b.dataset.cc==='on';vCC=on;$('vRoot').dataset.cc=on?'on':'off';$('vCcBtn').classList.toggle('on',on);
+  }));
+  /* keep pills synced when orb state changes via other means (tap orb, voiceNext) */
+  window.syncDevState=function(s){[...stateGrp.children].forEach(x=>x.classList.toggle('on',x.dataset.state===s));};
+})();
+/* patch vSetState to sync dev pills */
+(function(){const orig=window.vSetState;if(!orig)return;window.vSetState=function(s){orig(s);if(window.syncDevState)syncDevState(s);};})();
+</script>
+</body>
+</html>
