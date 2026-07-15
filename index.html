@@ -1362,12 +1362,14 @@ const CLIENTS_DEMO=[
   {av:'MR',name:'Marco Ruiz',email:'marco@example.com',phone:'(512) 555-2287',type:'Seller',tag:'Seller · Bay Area'},
 ];
 function say(t,sub){$('vCap').innerHTML=t;$('vSub').textContent=sub||'';}
-/* Mel voice clips (screen 4) — same JennyNeural voice as melvoice screen. Mel lines only; You/feedback lines stay silent. */
+/* Mel voice clips (screen 4) — same JennyNeural voice as melvoice screen. Mel lines only; You/feedback lines stay silent.
+   MEL_AUDIO_V = cache-buster — bump when regenerating any mp3. */
+const MEL_AUDIO_V=2;
 let melClip=null;
 function melVoice(key){
   if(vMuted)return;
   if(melClip){melClip.pause();melClip=null;}
-  melClip=new Audio('assets/mel-intro/s4/'+key+'.mp3');
+  melClip=new Audio('assets/mel-intro/s4/'+key+'.mp3?v='+MEL_AUDIO_V);
   melClip.play().catch(()=>{});
 }
 function melVoiceStop(){if(melClip){melClip.pause();melClip=null;}}
@@ -1376,7 +1378,7 @@ function melVoicePlay(key){
   return new Promise(res=>{
     if(vMuted){res();return;}
     if(melClip)melClip.pause();
-    melClip=new Audio('assets/mel-intro/s4/'+key+'.mp3');
+    melClip=new Audio('assets/mel-intro/s4/'+key+'.mp3?v='+MEL_AUDIO_V);
     melClip.onended=res;melClip.onerror=res;
     melClip.play().catch(res);
   });
@@ -1680,7 +1682,7 @@ function mvBuildCaps(){
 function mvShowLine(i){mvLines.forEach((el,j)=>{el.classList.toggle('vis',j>=i-2&&j<=i);el.classList.toggle('active',j===i);});}
 function mvInitAudio(){
   if(mvAudio)return;
-  mvAudio=new Audio('assets/mel-intro/mel-capabilities.mp3');mvAudio.preload='auto';
+  mvAudio=new Audio('assets/mel-intro/mel-capabilities.mp3?v='+MEL_AUDIO_V);mvAudio.preload='auto';
   mvAudio.addEventListener('canplaythrough',()=>{mvAudioOk=true;});
   mvAudio.addEventListener('timeupdate',()=>{let i=-1;for(let k=0;k<MV_CUES.length;k++){if(mvAudio.currentTime>=MV_CUES[k][0])i=k;}if(i>=0)mvShowLine(i);});
   mvAudio.addEventListener('ended',()=>mvDone());
